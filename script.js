@@ -112,6 +112,27 @@ async function connectWalletConnect() {
     toggleWalletModal();
 }
 
+async function connectMetaMask() {
+    try {
+        accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        console.log("Connected account:", accounts[0]);
+        
+        isConnected = true;
+        updateWalletButton();
+        
+        // Initialize contracts
+        initContracts();
+        console.log("Contracts initialized");
+        
+        // Force UI update
+        await updateUI();
+        
+        toggleWalletModal();
+    } catch (error) {
+        console.error("Connection failed:", error);
+    }
+}
+
 // Staking functions
 async function approveMax() {
     if (!isConnected) {
