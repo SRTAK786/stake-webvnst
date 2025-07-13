@@ -186,70 +186,55 @@ function copyReferralLink() {
 
 // UI Update function
 async function updateUI() {
-    if (!isConnected || !stakingContract) return;
-    
+    if (!isConnected || !stakingContract) {
+        console.log("Not connected or contract not initialized");
+        return;
+    }
+
     try {
-        // Update stakes list
-        if (document.getElementById('stakesList')) {
-            const stakesList = document.getElementById('stakesList');
-            stakesList.innerHTML = '<p>Loading stakes...</p>';
-            
-            const stakesCount = await stakingContract.methods.getUserStakesCount(accounts[0]).call();
-            stakesList.innerHTML = stakesCount > 0 ? '' : '<p>No active stakes found</p>';
-            
-            for (let i = 0; i < stakesCount; i++) {
-                const stake = await stakingContract.methods.userStakes(accounts[0], i).call();
-                if (stake.isActive) {
-                    stakesList.innerHTML += `
-                        <div class="stake-item">
-                            <p><strong>Stake #${i+1}:</strong> ${web3.utils.fromWei(stake.amount, 'ether')} VNST</p>
-                            <p>Days staked: ${stake.daysStaked || 0}/365</p>
-                        </div>
-                    `;
-                }
-            }
+        console.log("Starting UI update...");
+        
+        // Update wallet balance
+        if (document.getElementById('walletBalance')) {
+            const balance = await vnstTokenContract.methods.balanceOf(accounts[0]).call();
+            document.getElementById('walletBalance').textContent = 
+                web3.utils.fromWei(balance, 'ether') + ' VNST';
         }
 
-        // Update rewards display
+        // Update staking data
+        if (document.getElementById('yourStaked')) {
+            const user = await stakingContract.methods.users(accounts[0]).call();
+            document.getElementById('yourStaked').textContent = 
+                web3.utils.fromWei(user.totalStaked, 'ether') + ' VNST';
+        }
+
+        // Update rewards
         if (document.getElementById('yourRewards')) {
             try {
                 const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-                console.log("Rewards response:", rewards);
+                console.log("Raw rewards data:", rewards);
                 
                 let vntRewards = '0', usdtRewards = '0';
                 if (Array.isArray(rewards)) {
                     vntRewards = web3.utils.fromWei(rewards[0] || '0', 'ether');
                     usdtRewards = web3.utils.fromWei(rewards[1] || '0', 'ether');
-                } else if (typeof rewards === 'object') {
-                    vntRewards = web3.utils.fromWei(rewards.vntRewards || '0', 'ether');
-                    usdtRewards = web3.utils.fromWei(rewards.usdtRewards || '0', 'ether');
                 }
-                
-                document.getElementById('yourRewards').textContent = `${vntRewards} VNT + ${usdtRewards} USDT`;
+                document.getElementById('yourRewards').textContent = 
+                    `${vntRewards} VNT + ${usdtRewards} USDT`;
             } catch (error) {
-                console.error("Error fetching rewards:", error);
-                document.getElementById('yourRewards').textContent = "Error loading rewards";
+                console.error("Rewards error:", error);
             }
         }
 
-        // Update staked amount
-        if (document.getElementById('yourStaked')) {
-            try {
-                const user = await stakingContract.methods.users(accounts[0]).call();
-                document.getElementById('yourStaked').textContent = 
-                    `${web3.utils.fromWei(user.totalStaked, 'ether')} VNST`;
-            } catch (error) {
-                console.error("Error fetching staked amount:", error);
-                document.getElementById('yourStaked').textContent = "Error loading data";
-            }
+        // Update referral link
+        if (document.getElementById('referralLink')) {
+            document.getElementById('referralLink').value = 
+                `${window.location.origin}/stake.html?ref=${accounts[0]}`;
         }
 
-        // Update total staked
-        if (document.getElementById('totalStaked')) {
-            document.getElementById('totalStaked').textContent = "Loading...";
-        }
+        console.log("UI update complete");
     } catch (error) {
-        console.error("Error updating UI:", error);
+        console.error("UI update failed:", error);
     }
 }
 
