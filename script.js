@@ -208,14 +208,7 @@ async function claimRewards() {
     }
 }
 
-// Copy referral link
-function copyReferralLink() {
-    referralLinkInput.select();
-    document.execCommand('copy');
-    alert("Referral link copied to clipboard!");
-}
-
-// Update UI with contract data
+// Update UI with contract data - NEW VERSION
 async function updateUI() {
     if (!isConnected || !stakingContract) return;
     
@@ -244,23 +237,47 @@ async function updateUI() {
             }
         }
         
-        // Get pending rewards
+        // Get pending rewards - with debugging
         if (document.getElementById('yourRewards')) {
-            const [vntRewards, usdtRewards] = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-            document.getElementById('yourRewards').textContent = 
-                `${web3.utils.fromWei(vntRewards, 'ether')} VNT + ${web3.utils.fromWei(usdtRewards, 'ether')} USDT`;
+            try {
+                const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+                console.log("Rewards response:", rewards); // Debugging line
+                
+                let vntRewards = '0';
+                let usdtRewards = '0';
+                
+                if (Array.isArray(rewards)) {
+                    // Array format [vnt, usdt]
+                    vntRewards = web3.utils.fromWei(rewards[0] || '0', 'ether');
+                    usdtRewards = web3.utils.fromWei(rewards[1] || '0', 'ether');
+                } else if (typeof rewards === 'object') {
+                    // Object format {vntRewards, usdtRewards}
+                    vntRewards = web3.utils.fromWei(rewards.vntRewards || '0', 'ether');
+                    usdtRewards = web3.utils.fromWei(rewards.usdtRewards || '0', 'ether');
+                }
+                
+                document.getElementById('yourRewards').textContent = 
+                    `${vntRewards} VNT + ${usdtRewards} USDT`;
+            } catch (error) {
+                console.error("Error fetching rewards:", error);
+                document.getElementById('yourRewards').textContent = "Loading rewards...";
+            }
         }
         
         // Get total staked
         if (document.getElementById('yourStaked')) {
-            const user = await stakingContract.methods.users(accounts[0]).call();
-            document.getElementById('yourStaked').textContent = `${web3.utils.fromWei(user.totalStaked, 'ether')} VNST`;
+            try {
+                const user = await stakingContract.methods.users(accounts[0]).call();
+                document.getElementById('yourStaked').textContent = 
+                    `${web3.utils.fromWei(user.totalStaked, 'ether')} VNST`;
+            } catch (error) {
+                console.error("Error fetching total staked:", error);
+                document.getElementById('yourStaked').textContent = "Loading...";
+            }
         }
         
         // Get total staked across all users
         if (document.getElementById('totalStaked')) {
-            // Note: You would need a function in your contract to get total staked
-            // This is just a placeholder
             document.getElementById('totalStaked').textContent = "Loading...";
         }
         
