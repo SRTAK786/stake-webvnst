@@ -22,6 +22,9 @@ let isConnected = false;
 
 // Initialize the application
 window.addEventListener('DOMContentLoaded', async () => {
+    console.log("Initializing Web3...");
+    console.log("Window.ethereum available:", !!window.ethereum);
+
     // Initialize Web3
     if (window.ethereum) {
         web3 = new Web3(window.ethereum);
