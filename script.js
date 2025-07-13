@@ -210,55 +210,26 @@ function copyReferralLink() {
 
 // UI Update function
 async function updateUI() {
-    if (!isConnected || !stakingContract) {
-        console.log("Not connected or contract not initialized");
-        return;
-    }
-
+    if (!isConnected || !accounts[0]) return;
+    
     try {
-        console.log("Starting UI update...");
+        // वॉलेट बैलेंस
+        const balance = await vnstTokenContract.methods.balanceOf(accounts[0]).call();
+        document.getElementById('walletBalance').textContent = web3.utils.fromWei(balance, 'ether');
         
-        // Update wallet balance
-        if (document.getElementById('walletBalance')) {
-            const balance = await vnstTokenContract.methods.balanceOf(accounts[0]).call();
-            document.getElementById('walletBalance').textContent = 
-                web3.utils.fromWei(balance, 'ether') + ' VNST';
-        }
-
-        // Update staking data
-        if (document.getElementById('yourStaked')) {
-            const user = await stakingContract.methods.users(accounts[0]).call();
-            document.getElementById('yourStaked').textContent = 
-                web3.utils.fromWei(user.totalStaked, 'ether') + ' VNST';
-        }
-
-        // Update rewards
-        if (document.getElementById('yourRewards')) {
-            try {
-                const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-                console.log("Raw rewards data:", rewards);
-                
-                let vntRewards = '0', usdtRewards = '0';
-                if (Array.isArray(rewards)) {
-                    vntRewards = web3.utils.fromWei(rewards[0] || '0', 'ether');
-                    usdtRewards = web3.utils.fromWei(rewards[1] || '0', 'ether');
-                }
-                document.getElementById('yourRewards').textContent = 
-                    `${vntRewards} VNT + ${usdtRewards} USDT`;
-            } catch (error) {
-                console.error("Rewards error:", error);
-            }
-        }
-
-        // Update referral link
-        if (document.getElementById('referralLink')) {
-            document.getElementById('referralLink').value = 
-                `${window.location.origin}/stake.html?ref=${accounts[0]}`;
-        }
-
-        console.log("UI update complete");
+        // स्टेक्ड बैलेंस
+        const userInfo = await stakingContract.methods.users(accounts[0]).call();
+        const stakedAmount = userInfo.totalStaked || '0';
+        document.getElementById('yourStaked').textContent = web3.utils.fromWei(stakedAmount, 'ether');
+        
+        // रिवॉर्ड्स
+        const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+        const vntRewards = rewards[0] ? web3.utils.fromWei(rewards[0], 'ether') : '0';
+        const usdtRewards = rewards[1] ? web3.utils.fromWei(rewards[1], 'ether') : '0';
+        document.getElementById('yourRewards').textContent = `${vntRewards} VNT + ${usdtRewards} USDT`;
+        
     } catch (error) {
-        console.error("UI update failed:", error);
+        console.error("UI update error:", error);
     }
 }
 
