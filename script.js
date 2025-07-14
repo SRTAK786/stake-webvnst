@@ -73,12 +73,14 @@ window.addEventListener('DOMContentLoaded', async () => {
         const stakeBtn = document.getElementById('stakeBtn');
         const claimTokenBtn = document.getElementById('claimTokenBtn');
         const copyReferralBtn = document.getElementById('copyReferralBtn');
-        
+        const claimBatchBtn = document.getElementById('claimBatchBtn');
+
         if (approveMaxBtn) approveMaxBtn.addEventListener('click', approveMax);
         if (stakeBtn) stakeBtn.addEventListener('click', stakeTokens);
         if (claimTokenBtn) claimTokenBtn.addEventListener('click', claimRewards);
         if (copyReferralBtn) copyReferralBtn.addEventListener('click', copyReferralLink);
-        
+        if (claimBatchBtn) claimBatchBtn.addEventListener('click', claimRewardsBatch);
+
         setupStakingPage();
     }
     
@@ -199,6 +201,42 @@ async function claimRewards() {
     }
 }
 
+// 1. बैच क्लेम फंक्शन
+async function claimRewardsBatch() {
+    if (!isConnected) return alert("कृपया पहले वॉलेट कनेक्ट करें");
+    
+    try {
+        const stakesCount = await stakingContract.methods.getUserStakesCount(accounts[0]).call();
+        if (stakesCount <= 50) {
+            document.getElementById('batchStatus').textContent = "Batch क्लेम केवल 50+ स्टेक्स वालों के लिए है";
+            return;
+        }
+
+        const batchSize = 50;
+        let processed = 0;
+        document.getElementById('claimBatchBtn').disabled = true;
+        document.getElementById('batchStatus').textContent = "प्रोसेसिंग...";
+
+        for (let i = 0; i < stakesCount; i += batchSize) {
+            const endIndex = Math.min(i + batchSize, stakesCount);
+            await stakingContract.methods.claimRewardsBatch(i, endIndex)
+                .send({ from: accounts[0] });
+            processed += (endIndex - i);
+            document.getElementById('batchStatus').textContent = 
+                `प्रोसेस्ड: ${processed}/${stakesCount} स्टेक्स...`;
+        }
+
+        alert("सभी रिवार्ड्स क्लेम हो गए!");
+        await updateUI();
+    } catch (error) {
+        console.error("Batch क्लेम फेल:", error);
+        alert(`एरर: ${error.message}`);
+    } finally {
+        document.getElementById('claimBatchBtn').disabled = false;
+        document.getElementById('batchStatus').textContent = "";
+    }
+}
+
 // UI functions
 async function updateUI() {
     if (!isConnected || !accounts[0] || !stakingContract) {
@@ -276,6 +314,11 @@ async function updateUI() {
                 document.getElementById('stakesList').innerHTML = '<p>Error loading stakes</p>';
             }
         }
+
+        if (document.getElementById('claimBatchBtn')) {
+        const stakesCount = await stakingContract.methods.getUserStakesCount(accounts[0]).call();
+        document.getElementById('claimBatchBtn').disabled = stakesCount <= 50;
+    }
         
         console.log("UI updated successfully");
     } catch (error) {
