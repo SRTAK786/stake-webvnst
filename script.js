@@ -476,38 +476,48 @@ async function updateTeamPage() {
     if (!isConnected || !accounts[0]) return;
 
     try {
-        // 1. User level और टीम डेटा प्राप्त करें
-        const userLevel = await stakingContract.methods.getUserLevel(accounts[0]).call();
-        document.getElementById('userLevel').textContent = userLevel;
+        // Single contract call for all user data
+        const [userLevel, referralEarnings, directRewards, rewards] = await Promise.all([
+            stakingContract.methods.getUserLevel(accounts[0]).call(),
+            stakingContract.methods.getReferralEarnings(accounts[0]).call(),
+            stakingContract.methods.getTotalReferralEarnings(accounts[0]).call(),
+            stakingContract.methods.getPendingRewards(accounts[0]).call()
+        ]);
 
-        // 2. टीम स्टैटिस्टिक्स
-        const referralEarnings = await stakingContract.methods.getReferralEarnings(accounts[0]).call();
+        // Update basic info
+        document.getElementById('userLevel').textContent = userLevel;
         document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
         document.getElementById('totalTeamStake').textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
         document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
-
-        // 3. प्रत्येक लेवल के लिए डेटा अपडेट करें
-        for (let level = 1; level <= 5; level++) {
-            const levelData = await getLevelWiseData(level);
-            const isUnlocked = await stakingContract.methods.isLevelUnlocked(accounts[0], level).call();
-
-            document.getElementById(`level${level}Count`).textContent = levelData ? levelData.members.length : 0;
-            document.getElementById(`level${level}Stake`).textContent = levelData ? web3.utils.fromWei(levelData.totalStake.toString(), 'ether') + ' VNST' : '0 VNST';
-            document.getElementById(`level${level}Status`).textContent = isUnlocked ? 'Unlocked' : 'Locked';
-            document.getElementById(`level${level}Status`).className = isUnlocked ? 'status-unlocked' : 'status-locked';
-        }
-
-        // 4. इनकम डेटा
-        const directRewards = await stakingContract.methods.getTotalReferralEarnings(accounts[0]).call();
         document.getElementById('directIncome').textContent = web3.utils.fromWei(directRewards, 'ether') + ' USDT';
-
-        // ROI इनकम (सरलीकृत)
-        const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
         document.getElementById('roiIncome').textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
+        // Update levels in parallel
+        await updateTeamLevels();
+        
     } catch (error) {
         console.error("Team page update error:", error);
     }
+}
+
+async function updateTeamLevels() {
+    const levelUpdates = [];
+    for (let level = 1; level <= 5; level++) {
+        levelUpdates.push(updateSingleLevel(level));
+    }
+    await Promise.all(levelUpdates);
+}
+
+async function updateSingleLevel(level) {
+    const [levelData, isUnlocked] = await Promise.all([
+        getLevelWiseData(level),
+        stakingContract.methods.isLevelUnlocked(accounts[0], level).call()
+    ]);
+    
+    document.getElementById(`level${level}Count`).textContent = levelData ? levelData.members.length : 0;
+    document.getElementById(`level${level}Stake`).textContent = levelData ? web3.utils.fromWei(levelData.totalStake.toString(), 'ether') + ' VNST' : '0 VNST';
+    document.getElementById(`level${level}Status`).textContent = isUnlocked ? 'Unlocked' : 'Locked';
+    document.getElementById(`level${level}Status`).className = isUnlocked ? 'status-unlocked' : 'status-locked';
 }
 
 async function getLevelWiseData(level) {
