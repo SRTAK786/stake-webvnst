@@ -98,6 +98,19 @@ function initContracts() {
     }
 }
 
+async function updateHomeStats() {
+    try {
+        const stats = await stakingContract.methods.getContractStats().call();
+        document.getElementById('totalUsers').textContent = stats.usersCount;
+        document.getElementById('totalStakedInContract').textContent = 
+            web3.utils.fromWei(stats.totalStaked, 'ether') + ' VNST';
+        document.getElementById('totalVNTWithdrawn').textContent = 
+            web3.utils.fromWei(stats.vntWithdrawn, 'ether') + ' VNT';
+    } catch (error) {
+        console.error("Failed to update home stats:", error);
+    }
+}
+
 async function updateContractStats() {
   if (!isConnected) return;
   
@@ -405,6 +418,10 @@ async function updateUI() {
                 console.error("Error fetching rewards:", error);
                 document.getElementById('yourRewards').textContent = "0 VNT + 0 USDT";
             }
+        }
+
+        if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+            await updateHomeStats();
         }
 
         await updateContractStats();
