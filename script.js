@@ -452,6 +452,10 @@ async function updateUI() {
 
     await showWithdrawHistory();
 
+    if (window.location.pathname.includes('team.html')) {
+            await updateTeamPage();
+        }
+
         console.log("UI updated successfully");
     } catch (error) {
         console.error("UI update failed:", error);
@@ -466,6 +470,44 @@ function copyReferralLink() {
     referralLinkInput.select();
     document.execCommand('copy');
     alert("Referral link copied to clipboard!");
+}
+
+async function updateTeamPage() {
+    if (!isConnected || !accounts[0]) return;
+
+    try {
+        // 1. User level और टीम डेटा प्राप्त करें
+        const userLevel = await stakingContract.methods.getUserLevel(accounts[0]).call();
+        document.getElementById('userLevel').textContent = userLevel;
+
+        // 2. टीम स्टैटिस्टिक्स
+        const referralEarnings = await stakingContract.methods.getReferralEarnings(accounts[0]).call();
+        document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
+        document.getElementById('totalTeamStake').textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
+        document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
+
+        // 3. प्रत्येक लेवल के लिए डेटा अपडेट करें
+        for (let level = 1; level <= 5; level++) {
+            const levelData = await getLevelWiseData(level);
+            const isUnlocked = await stakingContract.methods.isLevelUnlocked(accounts[0], level).call();
+
+            document.getElementById(`level${level}Count`).textContent = levelData ? levelData.members.length : 0;
+            document.getElementById(`level${level}Stake`).textContent = levelData ? web3.utils.fromWei(levelData.totalStake.toString(), 'ether') + ' VNST' : '0 VNST';
+            document.getElementById(`level${level}Status`).textContent = isUnlocked ? 'Unlocked' : 'Locked';
+            document.getElementById(`level${level}Status`).className = isUnlocked ? 'status-unlocked' : 'status-locked';
+        }
+
+        // 4. इनकम डेटा
+        const directRewards = await stakingContract.methods.getTotalReferralEarnings(accounts[0]).call();
+        document.getElementById('directIncome').textContent = web3.utils.fromWei(directRewards, 'ether') + ' USDT';
+
+        // ROI इनकम (सरलीकृत)
+        const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+        document.getElementById('roiIncome').textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
+
+    } catch (error) {
+        console.error("Team page update error:", error);
+    }
 }
 
 async function getLevelWiseData(level) {
