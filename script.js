@@ -98,6 +98,39 @@ function initContracts() {
     }
 }
 
+async function updateContractStats() {
+  if (!isConnected) return;
+  
+  try {
+    const statsContainer = document.getElementById('contractStats');
+    if (!statsContainer) return;
+
+    // Get contract stats
+    const stats = await stakingContract.methods.getContractStats().call();
+    
+    statsContainer.innerHTML = `
+      <div class="stat-item">
+        <span class="stat-label">Total Users:</span>
+        <span class="stat-value">${stats.usersCount}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Staked:</span>
+        <span class="stat-value">${web3.utils.fromWei(stats.totalStaked, 'ether')} VNST</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Active Stake:</span>
+        <span class="stat-value">${web3.utils.fromWei(stats.activeStake, 'ether')} VNST</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">VNT Withdrawn:</span>
+        <span class="stat-value">${web3.utils.fromWei(stats.vntWithdrawn, 'ether')} VNT</span>
+      </div>
+    `;
+  } catch (error) {
+    console.error("Error fetching contract stats:", error);
+  }
+}
+
 // Wallet functions
 function toggleWalletModal() {
     walletModal.style.display = walletModal.style.display === 'block' ? 'none' : 'block';
@@ -275,39 +308,6 @@ async function updateUI() {
             const balance = await vnstTokenContract.methods.balanceOf(accounts[0]).call();
             document.getElementById('walletBalance').textContent = 
                 web3.utils.fromWei(balance, 'ether') + ' VNST';
-        }
-
-        async function updateContractStats() {
-          if (!isConnected) return;
-  
-          try {
-            const statsContainer = document.getElementById('contractStats');
-            if (!statsContainer) return;
-
-            // Get contract stats
-            const stats = await stakingContract.methods.getContractStats().call();
-    
-            statsContainer.innerHTML = `
-              <div class="stat-item">
-                <span class="stat-label">Total Users:</span>
-                <span class="stat-value">${stats.usersCount}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Total Staked:</span>
-                <span class="stat-value">${web3.utils.fromWei(stats.totalStaked, 'ether')} VNST</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Active Stake:</span>
-                <span class="stat-value">${web3.utils.fromWei(stats.activeStake, 'ether')} VNST</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">VNT Withdrawn:</span>
-                <span class="stat-value">${web3.utils.fromWei(stats.vntWithdrawn, 'ether')} VNT</span>
-              </div>
-    `        ;
-          } catch (error) {
-            console.error("Error fetching contract stats:", error);
-          }
         }
         
         // 2. Update staking info
