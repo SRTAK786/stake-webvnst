@@ -197,7 +197,7 @@ async function calculateROI(amount, durationDays) {
     const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
     
     // Simple ROI calculation (can be enhanced)
-    const dailyROI = (parseFloat(web3.utils.fromWei(rewards[0], 'ether')) / 365;
+    const dailyROI = parseFloat(web3.utils.fromWei(rewards[0], 'ether')) / 365;
     const estimatedReward = dailyROI * durationDays;
     
     return {
