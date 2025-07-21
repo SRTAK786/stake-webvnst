@@ -293,6 +293,76 @@ async function claimRewardsBatch() {
     }
 }
 
+async function updateTeamStats() {
+  if (!isConnected || !accounts[0]) return;
+  
+  try {
+    const teamContainer = document.getElementById('teamLevelsContainer');
+    if (!teamContainer) return;
+
+    teamContainer.innerHTML = ''; // Clear previous data
+    
+    for (let level = 1; level <= 5; level++) {
+      // Get team members for this level
+      const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
+      
+      // Calculate total stake for this level
+      let levelStake = 0;
+      for (const member of members) {
+        const stake = await stakingContract.methods.getTotalStaked(member).call();
+        levelStake += parseInt(stake);
+      } 
+
+      // Create level card HTML
+      const levelCard = `
+        <div class="level-card">
+          <h4>Level ${level}</h4>
+          <div class="level-stats">
+            <p><span class="stat-label">Members:</span> <span class="stat-value">${members.length}</span></p>
+            <p><span class="stat-label">Total Stake:</span> <span class="stat-value">${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST</span></p>
+          </div>
+        </div>
+      `;
+      
+      teamContainer.innerHTML += levelCard;
+    }
+  } catch (error) {
+    console.error("Error fetching team stats:", error);
+  }
+}
+
+async function showWithdrawHistory() {
+  if (!isConnected || !accounts[0]) return;
+  
+  try {
+    const historyContainer = document.getElementById('withdrawHistory');
+    if (!historyContainer) return;
+
+    const history = await stakingContract.methods.getWithdrawHistory(accounts[0]).call();
+    
+    if (history.amounts.length === 0) {
+      historyContainer.innerHTML = '<p>No withdrawal history found</p>';
+      return;
+    }
+    
+    let historyHTML = '<div class="history-header"><span>Amount</span><span>Date</span></div>';
+    
+    for (let i = 0; i < history.amounts.length; i++) {
+      const date = new Date(history.timestamps[i] * 1000);
+      historyHTML += `
+        <div class="history-item">
+          <span>${web3.utils.fromWei(history.amounts[i], 'ether')} VNT</span>
+          <span>${date.toLocaleDateString()}</span>
+        </div>
+      `;
+    }
+    
+    historyContainer.innerHTML = historyHTML;
+  } catch (error) {
+    console.error("Error fetching withdraw history:", error);
+  }
+}
+
 // UI functions
 async function updateUI() {
     if (!isConnected || !accounts[0] || !stakingContract) {
@@ -345,44 +415,6 @@ async function updateUI() {
         if (document.getElementById('referralLink')) {
             document.getElementById('referralLink').value = 
                 `${window.location.origin}/stake.html?ref=${accounts[0]}`;
-        }
-
-        async function updateTeamStats() {
-          if (!isConnected || !accounts[0]) return;
-  
-          try {
-            const teamContainer = document.getElementById('teamLevelsContainer');
-            if (!teamContainer) return;
-
-            teamContainer.innerHTML = ''; // Clear previous data
-    
-            for (let level = 1; level <= 5; level++) {
-              // Get team members for this level
-              const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
-      
-              // Calculate total stake for this level
-              let levelStake = 0;
-              for (const member of members) {
-                const stake = await stakingContract.methods.getTotalStaked(member).call();
-                levelStake += parseInt(stake);
-              } 
-
-              // Create level card HTML
-              const levelCard = `
-                <div class="level-card">
-                  <h4>Level ${level}</h4>
-                  <div class="level-stats">
-                    <p><span class="stat-label">Members:</span> <span class="stat-value">${members.length}</span></p>
-                    <p><span class="stat-label">Total Stake:</span> <span class="stat-value">${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST</span></p>
-                  </div>
-                </div>
-      `        ;
-      
-              teamContainer.innerHTML += levelCard;
-            }
-          } catch (error) {
-            console.error("Error fetching team stats:", error);
-          }
         } 
         
         // 5. Update stakes list
@@ -419,38 +451,6 @@ async function updateUI() {
     }
 
     await showWithdrawHistory();
-
-    async function showWithdrawHistory() {
-      if (!isConnected || !accounts[0]) return;
-  
-      try {
-        const historyContainer = document.getElementById('withdrawHistory');
-        if (!historyContainer) return;
-
-        const history = await stakingContract.methods.getWithdrawHistory(accounts[0]).call();
-    
-        if (history.amounts.length === 0) {
-          historyContainer.innerHTML = '<p>No withdrawal history found</p>';
-          return;
-        }
-    
-        let historyHTML = '<div class="history-header"><span>Amount</span><span>Date</span></div>';
-    
-        for (let i = 0; i < history.amounts.length; i++) {
-          const date = new Date(history.timestamps[i] * 1000);
-          historyHTML += `
-            <div class="history-item">
-              <span>${web3.utils.fromWei(history.amounts[i], 'ether')} VNT</span>
-              <span>${date.toLocaleDateString()}</span>
-            </div>
-      `    ;
-        }
-    
-        historyContainer.innerHTML = historyHTML;
-      } catch (error) {
-        console.error("Error fetching withdraw history:", error);
-      }
-    }
 
         console.log("UI updated successfully");
     } catch (error) {
