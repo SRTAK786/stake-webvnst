@@ -67,21 +67,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     walletConnectBtn.addEventListener('click', connectWalletConnect);
     mobileMenuBtn.addEventListener('click', toggleMobileMenu);
     
-    // Staking Page Specific
-    if (window.location.pathname.includes('stake.html')) {
-        const approveMaxBtn = document.getElementById('approveMaxBtn');
-        const stakeBtn = document.getElementById('stakeBtn');
-        const claimTokenBtn = document.getElementById('claimTokenBtn');
-        const copyReferralBtn = document.getElementById('copyReferralBtn');
-        const claimBatchBtn = document.getElementById('claimBatchBtn');
+    const approveMaxBtn = document.getElementById('approveMaxBtn');
+    const stakeBtn = document.getElementById('stakeBtn');
+    const claimTokenBtn = document.getElementById('claimTokenBtn');
+    const copyReferralBtn = document.getElementById('copyReferralBtn');
+    const claimBatchBtn = document.getElementById('claimBatchBtn');
 
+    // Stake page specific event listeners
+    if (window.location.pathname.includes('stake.html')) {
         if (approveMaxBtn) approveMaxBtn.addEventListener('click', approveMax);
         if (stakeBtn) stakeBtn.addEventListener('click', stakeTokens);
         if (claimTokenBtn) claimTokenBtn.addEventListener('click', claimRewards);
         if (copyReferralBtn) copyReferralBtn.addEventListener('click', copyReferralLink);
         if (claimBatchBtn) claimBatchBtn.addEventListener('click', claimRewardsBatch);
-
-        setupStakingPage();
     }
     
     animateCardsOnScroll();
