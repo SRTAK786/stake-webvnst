@@ -528,6 +528,27 @@ function setupStakingPage() {
     }
 }
 
+async function getStakeDetails(stakeIndex) {
+  if (!isConnected || !accounts[0]) return null;
+  
+  try {
+    const stake = await stakingContract.methods.userStakes(accounts[0], stakeIndex).call();
+    const currentDay = Math.floor(Date.now() / 1000 / 86400);
+    const daysStaked = currentDay - stake.startDay;
+    
+    return {
+      amount: web3.utils.fromWei(stake.amount, 'ether'),
+      startDay: stake.startDay,
+      daysStaked: daysStaked > 365 ? 365 : daysStaked,
+      isActive: stake.isActive,
+      lastClaimDay: stake.lastClaimDay
+    };
+  } catch (error) {
+    console.error("Error getting stake details:", error);
+    return null;
+  }
+}
+
 function animateCardsOnScroll() {
     const cards = document.querySelectorAll('.card');
     const observer = new IntersectionObserver((entries) => {
