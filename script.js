@@ -280,6 +280,35 @@ async function updateUI() {
                 document.getElementById('yourRewards').textContent = "0 VNT + 0 USDT";
             }
         }
+
+        // कॉन्ट्रैक्ट का टोटल स्टेक दिखाएं
+        if (document.getElementById('totalContractStake')) {
+          try {
+            const totalStaked = await vnstTokenContract.methods.balanceOf(stakingAddress).call();
+            document.getElementById('totalContractStake').textContent = 
+              web3.utils.fromWei(totalStaked, 'ether');
+          } catch (error) {
+            console.error("Total stake fetch error:", error);
+          }
+        }
+
+        // यूजर के स्टेक IDs दिखाएं
+        if (document.getElementById('userStakeIds')) {
+          try {
+            const stakesCount = await stakingContract.methods.getUserStakesCount(accounts[0]).call();
+            const stakeIds = [];
+            for (let i = 0; i < stakesCount; i++) {
+              const stake = await stakingContract.methods.userStakes(accounts[0], i).call();
+              if (stake.isActive) {
+                stakeIds.push(i+1); // ID को 1 से शुरू दिखाने के लिए
+              }
+            }
+            document.getElementById('userStakeIds').textContent = 
+              stakeIds.length > 0 ? stakeIds.join(', ') : 'कोई स्टेक नहीं';
+          } catch (error) {
+            console.error("Stake IDs fetch error:", error);
+          }
+        }
         
         // 4. Update referral link
         if (document.getElementById('referralLink')) {
