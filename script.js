@@ -438,25 +438,56 @@ async function updateUI() {
                 const stakesCount = await stakingContract.methods.getUserStakesCount(accounts[0]).call();
                 const stakesList = document.getElementById('stakesList');
                 stakesList.innerHTML = '';
-                
+        
                 if (stakesCount > 0) {
+                    const summaryCard = document.createElement('div');
+                    summaryCard.className = 'stake-summary';
+            
+                    let totalStaked = 0;
+                    const activeStakes = [];
+            
                     for (let i = 0; i < stakesCount; i++) {
                         const stake = await stakingContract.methods.userStakes(accounts[0], i).call();
                         if (stake.isActive) {
-                            stakesList.innerHTML += `
-                                <div class="stake-item">
-                                    <p><strong>Stake #${i+1}:</strong> ${web3.utils.fromWei(stake.amount, 'ether')} VNST</p>
-                                    <p>Days staked: ${stake.daysStaked || 0}/365</p>
-                                </div>
-                            `;
+                            totalStaked += parseFloat(web3.utils.fromWei(stake.amount, 'ether'));
+                            activeStakes.push(stake);
                         }
                     }
+            
+                    summaryCard.innerHTML = `
+                        <p><strong>Total Staked:</strong> ${totalStaked.toFixed(2)} VNST</p>
+                        <p><strong>Active Stakes:</strong> ${activeStakes.length}</p>
+                        <div class="see-more">See More Details</div>
+            `        ;
+            
+                    const detailsCard = document.createElement('div');
+                    detailsCard.className = 'stake-details';
+            
+                    activeStakes.forEach((stake, index) => {
+                        detailsCard.innerHTML += `
+                            <div class="stake-item">
+                                <p><strong>Stake #${index+1}:</strong> ${web3.utils.fromWei(stake.amount, 'ether')} VNST</p>
+                                <p>Days staked: ${stake.daysStaked || 0}/365</p>
+                            </div>
+                `       ;
+                    });
+            
+                    stakesList.appendChild(summaryCard);
+                    stakesList.appendChild(detailsCard);
+            
+                    const seeMoreBtn = summaryCard.querySelector('.see-more');
+                    seeMoreBtn.addEventListener('click', () => {
+                        detailsCard.classList.toggle('active');
+                        seeMoreBtn.textContent = detailsCard.classList.contains('active') ? 
+                            'Show Less' : 'See More Details';
+                    });
+            
                 } else {
                     stakesList.innerHTML = '<p>No active stakes found</p>';
                 }
             } catch (error) {
                 console.error("Error loading stakes:", error);
-                document.getElementById('stakesList').innerHTML = '<p>Error loading stakes</p>';
+                stakesList.innerHTML = '<p>Error loading stake details</p>';
             }
         }
 
