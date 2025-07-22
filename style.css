@@ -200,6 +200,51 @@ body::before {
   border-radius: 8px;
 }
 
+/* Team Page Specific */
+.team-card {
+  position: relative; /* नए स्टाइल्स के लिए जरूरी */
+  overflow: visible; /* ड्रॉपडाउन कंटेंट दिखाने के लिए */
+}
+
+.level-details-toggle {
+  color: var(--accent-color);
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-align: right;
+  margin-top: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.level-details-toggle:hover {
+  text-decoration: underline;
+}
+
+.level-members-list {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+  background: rgba(0, 43, 92, 0.7);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.level-members-list.active {
+  max-height: 500px;
+  padding: 0.8rem;
+  border: 1px solid var(--glass-border);
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.2);
+}
+
+.member-item:last-child {
+  border-bottom: none;
+}
+
 /* Buttons */
 .btn, .wallet-connect-btn {
   display: inline-block;
