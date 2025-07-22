@@ -138,6 +138,51 @@ body::before {
   gap: 1rem;
 }
 
+/* Stake Item Styles */
+.stake-summary {
+  background: rgba(0, 67, 135, 0.6);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 4px solid var(--secondary-color);
+}
+
+.stake-summary:hover {
+  background: rgba(0, 87, 175, 0.7);
+}
+
+.stake-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease;
+  background: rgba(0, 43, 92, 0.5);
+  border-radius: 0 0 10px 10px;
+}
+
+.stake-details.active {
+  max-height: 500px; /* यह जितनी बड़ी स्टेक लिस्ट हो सकती है */
+  padding: 1rem;
+}
+
+.see-more {
+  color: var(--accent-color);
+  text-align: right;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.stake-item {
+  padding: 0.8rem;
+  margin: 0.5rem 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-color);
+}
+
 /* Team Page Specific */
 .team-grid {
   display: grid;
