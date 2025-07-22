@@ -384,23 +384,29 @@ async function updateUI() {
     try {
         console.log("Updating UI...");
         
-        // 1. Update wallet balance
+        // 1. वॉलेट बैलेंस अपडेट करें (पहले जैसा)
         if (document.getElementById('walletBalance')) {
             const balance = await vnstTokenContract.methods.balanceOf(accounts[0]).call();
             document.getElementById('walletBalance').textContent = 
                 web3.utils.fromWei(balance, 'ether') + ' VNST';
         }
         
-        // 2. Update staking info
+        // 2. स्टेक्ड अमाउंट अपडेट करें (पहले जैसा)
         if (document.getElementById('yourStaked')) {
             const user = await stakingContract.methods.users(accounts[0]).call();
             const stakedAmount = user.totalStaked || '0';
             document.getElementById('yourStaked').textContent = 
                 web3.utils.fromWei(stakedAmount, 'ether') + ' VNST';
+            
+            // टोटल क्लेम्ड रिवॉर्ड्स दिखाएं
+            if (document.getElementById('totalClaimedRewards')) {
+                document.getElementById('totalClaimedRewards').textContent = 
+                    web3.utils.fromWei(user.totalClaimed || '0', 'ether') + ' VNT';
+            }
         }
         
-        // 3. Update rewards
-        if (document.getElementById('yourRewards')) {
+        // 3. पेंडिंग रिवॉर्ड्स अपडेट करें
+        if (document.getElementById('pendingVntRewards') || document.getElementById('pendingUsdtRewards')) {
             try {
                 const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
                 console.log("Raw rewards data:", rewards);
@@ -410,11 +416,31 @@ async function updateUI() {
                     vntRewards = web3.utils.fromWei(rewards[0] || '0', 'ether');
                     usdtRewards = web3.utils.fromWei(rewards[1] || '0', 'ether');
                 }
-                document.getElementById('yourRewards').textContent = 
-                    `${vntRewards} VNT + ${usdtRewards} USDT`;
+                
+                // नए रिवॉर्ड्स डिस्प्ले को अपडेट करें
+                if (document.getElementById('pendingVntRewards')) {
+                    document.getElementById('pendingVntRewards').textContent = vntRewards + ' VNT';
+                }
+                if (document.getElementById('pendingUsdtRewards')) {
+                    document.getElementById('pendingUsdtRewards').textContent = usdtRewards + ' USDT';
+                }
+                
+                // पुराने रिवॉर्ड्स डिस्प्ले को भी अपडेट करें (अगर मौजूद है)
+                if (document.getElementById('yourRewards')) {
+                    document.getElementById('yourRewards').textContent = 
+                        `${vntRewards} VNT + ${usdtRewards} USDT`;
+                }
             } catch (error) {
                 console.error("Error fetching rewards:", error);
-                document.getElementById('yourRewards').textContent = "0 VNT + 0 USDT";
+                if (document.getElementById('pendingVntRewards')) {
+                    document.getElementById('pendingVntRewards').textContent = 'Error';
+                }
+                if (document.getElementById('pendingUsdtRewards')) {
+                    document.getElementById('pendingUsdtRewards').textContent = 'Error';
+                }
+                if (document.getElementById('yourRewards')) {
+                    document.getElementById('yourRewards').textContent = "0 VNT + 0 USDT";
+                }
             }
         }
 
