@@ -82,7 +82,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (claimBatchBtn) claimBatchBtn.addEventListener('click', claimRewardsBatch);
     }
 
-    await loadDailyVNTRewards();
     animateCardsOnScroll();
 });
 
@@ -331,7 +330,7 @@ async function loadDailyVNTRewards() {
     const vntRewards = web3.utils.fromWei(rewards[0], 'ether');
     
     // डेली रिवॉर्ड्स कैलकुलेट करें (365 दिनों में विभाजित)
-    const dailyVNT = (parseFloat(vntRewards) / 365;
+    const dailyVNT = parseFloat(vntRewards) / 365;
     
     rewardsDisplay.innerHTML = `
       <div class="reward-item">
