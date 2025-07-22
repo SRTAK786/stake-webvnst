@@ -421,10 +421,6 @@ async function updateUI() {
         if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
             await updateHomeStats();
         }
-
-        await updateContractStats();
-
-        await updateTeamStats();
         
         // 4. Update referral link
         if (document.getElementById('referralLink')) {
@@ -522,7 +518,7 @@ async function updateTeamPage() {
     if (!isConnected || !accounts[0]) return;
 
     try {
-        // 1. बेसिक डेटा एक साथ फेच करें
+        // 1. बेसिक डेटा फेच करें
         const [userLevel, referralEarnings, directRewards, rewards] = await Promise.all([
             stakingContract.methods.getUserLevel(accounts[0]).call(),
             stakingContract.methods.getReferralEarnings(accounts[0]).call(),
@@ -531,16 +527,19 @@ async function updateTeamPage() {
         ]);
 
         // 2. बेसिक इन्फो अपडेट करें
-        updateElementText('userLevel', userLevel);
-        updateElementText('totalTeamMembers', referralEarnings.referralCount);
-        updateElementText('totalTeamStake', `${web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether')} VNST`);
-        updateElementText('totalReferrals', referralEarnings.referralCount);
-        updateElementText('directIncome', `${web3.utils.fromWei(directRewards, 'ether')} USDT`);
-        updateElementText('roiIncome', `${web3.utils.fromWei(rewards[1], 'ether')} USDT`);
+        document.getElementById('userLevel').textContent = userLevel;
+        document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
+        document.getElementById('totalTeamStake').textContent = 
+            web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
+        document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
+        document.getElementById('directIncome').textContent = 
+            web3.utils.fromWei(directRewards, 'ether') + ' USDT';
+        document.getElementById('roiIncome').textContent = 
+            web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
-        // 3. सभी लेवल्स के लिए डेटा अपडेट करें
+        // 3. सभी लेवल्स अपडेट करें
         for (let level = 1; level <= 5; level++) {
-            await updateLevelData(level);
+            await updateTeamLevel(level);
         }
 
     } catch (error) {
@@ -548,54 +547,47 @@ async function updateTeamPage() {
     }
 }
 
-async function updateLevelData(level) {
+async function updateTeamLevel(level) {
     try {
-        // सही selector के लिए backticks का उपयोग करें
         const levelCard = document.querySelector(`.team-card:nth-child(${level + 1})`);
-        if (!levelCard) {
-            console.warn(`Level ${level} card not found`);
-            return;
-        }
+        if (!levelCard) return;
 
-        // मेंबर्स डेटा फेच करें
         const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
         let levelStake = 0;
         
-        // प्रत्येक मेंबर का स्टेक कैलकुलेट करें
-        for (const member of members) {
+        // मेंबर्स और उनका स्टेक कैलकुलेट करें
+        const memberPromises = members.map(async member => {
             const stake = await stakingContract.methods.getTotalStaked(member).call();
             levelStake += parseInt(stake);
-        }
+            return { member, stake };
+        });
 
+        const membersData = await Promise.all(memberPromises);
+        
         // UI अपडेट करें
-        const countElement = levelCard.querySelector(`#level${level}Count`);
-        const stakeElement = levelCard.querySelector(`#level${level}Stake`);
+        levelCard.querySelector(`#level${level}Count`).textContent = members.length;
+        levelCard.querySelector(`#level${level}Stake`).textContent = 
+            web3.utils.fromWei(levelStake.toString(), 'ether') + ' VNST';
+            
         const statusElement = levelCard.querySelector(`#level${level}Status`);
-
-        if (countElement) countElement.textContent = members.length;
-        if (stakeElement) stakeElement.textContent = `${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST`;
         if (statusElement) {
             statusElement.textContent = members.length > 0 ? 'Unlocked' : 'Locked';
             statusElement.className = members.length > 0 ? 'status-unlocked' : 'status-locked';
         }
 
-        // मेंबर्स लिस्ट के लिए HTML तैयार करें (यदि जरूरी हो)
-        if (levelCard.querySelector('.level-details-toggle')) {
-            let membersHtml = '';
-            members.forEach(member => {
-                membersHtml += `
-                    <div class="member-item">
-                        <span>${member.substring(0,6)}...${member.substring(38)}</span>
-                        <span>${web3.utils.fromWei(stake, 'ether')} VNST</span>
-                    </div>
-                `;
-            });
-
-            levelCard.querySelector('.level-members-list').innerHTML = membersHtml;
+        // मेंबर्स लिस्ट अपडेट करें (यदि मौजूद हो)
+        const membersList = levelCard.querySelector('.level-members-list');
+        if (membersList) {
+            membersList.innerHTML = membersData.map(data => `
+                <div class="member-item">
+                    <span>${data.member.substring(0,6)}...${data.member.substring(38)}</span>
+                    <span>${web3.utils.fromWei(data.stake, 'ether')} VNST</span>
+                </div>
+            `).join('');
         }
 
     } catch (error) {
-        console.error(`Error updating level ${level} data:`, error);
+        console.error(`Error updating level ${level}:`, error);
     }
 }
 
@@ -606,20 +598,22 @@ function updateElementText(id, text) {
 }
 
 // DOMContentLoaded पर इवेंट लिसनर
-document.addEventListener('DOMContentLoaded', () => {
-    const toggleButtons = document.querySelectorAll('.level-details-toggle');
-    toggleButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const list = e.target.nextElementSibling;
-            if (list) {
+function initEventListeners() {
+    document.querySelectorAll('.level-details-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const list = this.nextElementSibling;
+            if (list && list.classList.contains('level-members-list')) {
                 list.classList.toggle('active');
-                e.target.textContent = list.classList.contains('active') 
+                this.textContent = list.classList.contains('active') 
                     ? 'Hide Members' 
                     : 'Show Members';
             }
         });
     });
-});
+}
+
+// DOMContentLoaded पर कॉल करें
+window.addEventListener('DOMContentLoaded', initEventListeners);
 
 async function updateTeamLevels() {
     const levelUpdates = [];
