@@ -254,17 +254,29 @@ async function stakeTokens() {
 }
 
 async function claimRewards() {
-    if (!isConnected) return alert("Please connect your wallet first");
+    if (!isConnected) return alert("Please connect wallet");
     
     try {
-        const result = await stakingContract.methods.claimRewards()
-            .send({ from: accounts[0] });
-        console.log("Rewards claimed:", result);
-        alert("Rewards claimed successfully!");
-        await updateUI();
+        // पहले मिनिमम वैल्यू चेक करें
+        const [minVNT, minUSDT] = await Promise.all([
+            stakingContract.methods.minVNTWithdraw().call(),
+            stakingContract.methods.minUSDTWithdraw().call()
+        ]);
+        
+        // फिर रिवॉर्ड्स चेक करें
+        const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+        
+        if (rewards[0] < minVNT && rewards[1] < minUSDT) {
+            return alert(`Rewards less than minimum (${minVNT} VNT / ${minUSDT} USDT)`);
+        }
+        
+        // अब क्लेम करें
+        await stakingContract.methods.claimRewards().send({ from: accounts[0] });
+        alert("Success!");
+        updateUI();
     } catch (error) {
         console.error("Claim failed:", error);
-        alert("Claim failed: " + error.message);
+        alert("Error: " + error.message);
     }
 }
 
