@@ -168,44 +168,57 @@ async function connectMetaMask() {
     }
 }
 
-// Updated WalletConnect implementation (add this to your existing code)
+// मोबाइल डिवाइस डिटेक्शन के लिए हेल्पर फंक्शन
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// अपडेटेड connectWalletConnect फंक्शन
 async function connectWalletConnect() {
     try {
-        // Check if Web3Modal is already initialized
+        // मोबाइल डिवाइस चेक
+        if (isMobileDevice()) {
+            // Trust Wallet और अन्य मोबाइल वॉलेट्स के लिए डीप लिंक
+            const deepLink = `https://link.trustwallet.com/wc?uri=${encodeURIComponent(window.location.href)}`;
+            window.location.href = deepLink;
+            return;
+        }
+
+        // बाकी का WalletConnect इम्प्लीमेंटेशन (आपका मौजूदा कोड)
         if (!window.Web3Modal) {
-            // Load required scripts dynamically
             await loadScript('https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js');
             await loadScript('https://cdn.jsdelivr.net/npm/web3modal@1.9.10/dist/index.js');
         }
 
-        // Configure WalletConnect provider
         const providerOptions = {
             walletconnect: {
                 package: WalletConnectProvider.default,
                 options: {
                     rpc: {
-                        56: "https://bsc-dataseed.binance.org/", // BSC Mainnet
-                        97: "https://data-seed-prebsc-1-s1.binance.org:8545/" // BSC Testnet
+                        56: "https://bsc-dataseed.binance.org/",
+                        97: "https://data-seed-prebsc-1-s1.binance.org:8545/"
+                    },
+                    qrcodeModalOptions: {
+                        mobileLinks: [
+                            'trust',  // Trust Wallet
+                            'metamask', // MetaMask Mobile
+                            'tokenpocket', // TokenPocket
+                            'safepal' // SafePal
+                        ]
                     }
                 }
             }
         };
 
-        // Create Web3Modal instance
         const web3Modal = new Web3Modal({
-            network: "binance", // Default to BSC
+            network: "binance",
             providerOptions,
             cacheProvider: true,
             theme: "dark"
         });
 
-        // Open connection modal
         const provider = await web3Modal.connect();
-        
-        // Create Web3 instance
         web3 = new Web3(provider);
-        
-        // Get accounts
         accounts = await web3.eth.getAccounts();
         
         if (accounts.length === 0) {
@@ -213,13 +226,11 @@ async function connectWalletConnect() {
         }
 
         console.log("Connected via WalletConnect:", accounts[0]);
-        
         isConnected = true;
         updateWalletButton();
         initContracts();
         await updateUI();
         
-        // Subscribe to accounts change
         provider.on("accountsChanged", (newAccounts) => {
             accounts = newAccounts;
             isConnected = accounts.length > 0;
@@ -227,13 +238,11 @@ async function connectWalletConnect() {
             if (isConnected) updateUI();
         });
 
-        // Subscribe to chain change
         provider.on("chainChanged", (chainId) => {
             console.log("Chain changed:", chainId);
             window.location.reload();
         });
 
-        // Subscribe to disconnect
         provider.on("disconnect", (code, reason) => {
             console.log("Disconnected:", reason);
             isConnected = false;
@@ -244,7 +253,7 @@ async function connectWalletConnect() {
         
     } catch (error) {
         console.error("WalletConnect connection failed:", error);
-        alert("WalletConnect connection failed: " + error.message);
+        alert("Connection failed: " + error.message);
     }
 }
 
