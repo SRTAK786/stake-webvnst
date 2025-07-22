@@ -168,9 +168,95 @@ async function connectMetaMask() {
     }
 }
 
+// Updated WalletConnect implementation (add this to your existing code)
 async function connectWalletConnect() {
-    alert("WalletConnect integration would go here in a full implementation");
-    toggleWalletModal();
+    try {
+        // Check if Web3Modal is already initialized
+        if (!window.Web3Modal) {
+            // Load required scripts dynamically
+            await loadScript('https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js');
+            await loadScript('https://cdn.jsdelivr.net/npm/web3modal@1.9.10/dist/index.js');
+        }
+
+        // Configure WalletConnect provider
+        const providerOptions = {
+            walletconnect: {
+                package: WalletConnectProvider.default,
+                options: {
+                    rpc: {
+                        56: "https://bsc-dataseed.binance.org/", // BSC Mainnet
+                        97: "https://data-seed-prebsc-1-s1.binance.org:8545/" // BSC Testnet
+                    }
+                }
+            }
+        };
+
+        // Create Web3Modal instance
+        const web3Modal = new Web3Modal({
+            network: "binance", // Default to BSC
+            providerOptions,
+            cacheProvider: true,
+            theme: "dark"
+        });
+
+        // Open connection modal
+        const provider = await web3Modal.connect();
+        
+        // Create Web3 instance
+        web3 = new Web3(provider);
+        
+        // Get accounts
+        accounts = await web3.eth.getAccounts();
+        
+        if (accounts.length === 0) {
+            throw new Error("No accounts found");
+        }
+
+        console.log("Connected via WalletConnect:", accounts[0]);
+        
+        isConnected = true;
+        updateWalletButton();
+        initContracts();
+        await updateUI();
+        
+        // Subscribe to accounts change
+        provider.on("accountsChanged", (newAccounts) => {
+            accounts = newAccounts;
+            isConnected = accounts.length > 0;
+            updateWalletButton();
+            if (isConnected) updateUI();
+        });
+
+        // Subscribe to chain change
+        provider.on("chainChanged", (chainId) => {
+            console.log("Chain changed:", chainId);
+            window.location.reload();
+        });
+
+        // Subscribe to disconnect
+        provider.on("disconnect", (code, reason) => {
+            console.log("Disconnected:", reason);
+            isConnected = false;
+            updateWalletButton();
+        });
+
+        toggleWalletModal();
+        
+    } catch (error) {
+        console.error("WalletConnect connection failed:", error);
+        alert("WalletConnect connection failed: " + error.message);
+    }
+}
+
+// Helper function to load scripts dynamically
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
 }
 
 function updateWalletButton() {
