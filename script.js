@@ -623,18 +623,6 @@ async function updateTeamLevels() {
     await Promise.all(levelUpdates);
 }
 
-async function updateSingleLevel(level) {
-    const [levelData, isUnlocked] = await Promise.all([
-        getLevelWiseData(level),
-        stakingContract.methods.isLevelUnlocked(accounts[0], level).call()
-    ]);
-    
-    document.getElementById(`level${level}Count`).textContent = levelData ? levelData.members.length : 0;
-    document.getElementById(`level${level}Stake`).textContent = levelData ? web3.utils.fromWei(levelData.totalStake.toString(), 'ether') + ' VNST' : '0 VNST';
-    document.getElementById(`level${level}Status`).textContent = isUnlocked ? 'Unlocked' : 'Locked';
-    document.getElementById(`level${level}Status`).className = isUnlocked ? 'status-unlocked' : 'status-locked';
-}
-
 async function getLevelWiseData(level) {
   if (!isConnected || !accounts[0]) return null;
   
@@ -658,37 +646,6 @@ async function getLevelWiseData(level) {
     return data;
   } catch (error) {
     console.error(`Error getting level ${level} data:`, error);
-    return null;
-  }
-}
-
-function setupStakingPage() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const ref = urlParams.get('ref');
-    const referralAddressInput = document.getElementById('referralAddress');
-    
-    if (ref && referralAddressInput && !referralAddressInput.value) {
-        referralAddressInput.value = ref;
-    }
-}
-
-async function getStakeDetails(stakeIndex) {
-  if (!isConnected || !accounts[0]) return null;
-  
-  try {
-    const stake = await stakingContract.methods.userStakes(accounts[0], stakeIndex).call();
-    const currentDay = Math.floor(Date.now() / 1000 / 86400);
-    const daysStaked = currentDay - stake.startDay;
-    
-    return {
-      amount: web3.utils.fromWei(stake.amount, 'ether'),
-      startDay: stake.startDay,
-      daysStaked: daysStaked > 365 ? 365 : daysStaked,
-      isActive: stake.isActive,
-      lastClaimDay: stake.lastClaimDay
-    };
-  } catch (error) {
-    console.error("Error getting stake details:", error);
     return null;
   }
 }
