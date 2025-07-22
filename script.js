@@ -496,7 +496,7 @@ async function updateUI() {
 
         await updateContractStats();
         await updateTeamStats();
-        await displayDailyVNTRewards();
+        await loadDailyVNTRewards();
         
         // 4. Update referral link
         if (document.getElementById('referralLink')) {
