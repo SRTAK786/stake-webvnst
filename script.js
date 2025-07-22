@@ -81,7 +81,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (copyReferralBtn) copyReferralBtn.addEventListener('click', copyReferralLink);
         if (claimBatchBtn) claimBatchBtn.addEventListener('click', claimRewardsBatch);
     }
-    
+
+    await loadDailyVNTRewards();
     animateCardsOnScroll();
 });
 
@@ -316,6 +317,40 @@ async function claimRewardsBatch() {
     }
 }
 
+async function loadDailyVNTRewards() {
+  if (!isConnected || !accounts[0]) return;
+  
+  const rewardsDisplay = document.getElementById('dailyVntRewardsDisplay');
+  if (!rewardsDisplay) return;
+
+  try {
+    rewardsDisplay.innerHTML = '<div class="loading-spinner"></div>';
+    
+    // पेंडिंग रिवॉर्ड्स प्राप्त करें
+    const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+    const vntRewards = web3.utils.fromWei(rewards[0], 'ether');
+    
+    // डेली रिवॉर्ड्स कैलकुलेट करें (365 दिनों में विभाजित)
+    const dailyVNT = (parseFloat(vntRewards) / 365;
+    
+    rewardsDisplay.innerHTML = `
+      <div class="reward-item">
+        <span class="reward-label">Estimated Daily:</span>
+        <span class="reward-value">${dailyVNT.toFixed(6)} VNT</span>
+      </div>
+      <div class="reward-item">
+        <span class="reward-label">Pending Total:</span>
+        <span class="reward-value">${parseFloat(vntRewards).toFixed(4)} VNT</span>
+      </div>
+      <small>Updates automatically</small>
+    `;
+    
+  } catch (error) {
+    console.error("Error loading daily rewards:", error);
+    rewardsDisplay.innerHTML = '<p class="error">Error loading rewards</p>';
+  }
+}
+
 async function updateTeamStats() {
   if (!isConnected || !accounts[0]) return;
   
@@ -461,8 +496,8 @@ async function updateUI() {
         }
 
         await updateContractStats();
-
         await updateTeamStats();
+        await displayDailyVNTRewards();
         
         // 4. Update referral link
         if (document.getElementById('referralLink')) {
