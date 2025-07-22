@@ -554,15 +554,19 @@ async function updateTeamPage() {
 
 async function updateLevelData(level) {
     try {
-        const levelCard = document.querySelector(`#level${level}Count`).closest('.team-card');
-        if (!levelCard) return;
+        // बैकटिक्स का उपयोग करके सही सेलेक्टर बनाएं
+        const levelCard = document.querySelector(`#level${level}Count`)?.closest('.team-card');
+        if (!levelCard) {
+            console.warn(`Level ${level} card not found`);
+            return;
+        }
 
-        // 1. मेंबर्स और उनका स्टेक डेटा फेच करें
+        // मेंबर्स डेटा फेच करें
         const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
         let levelStake = 0;
         let membersHtml = '';
 
-        // 2. प्रत्येक मेंबर का डेटा प्रोसेस करें
+        // प्रत्येक मेंबर का डेटा प्रोसेस करें
         const memberPromises = members.map(async (member) => {
             const stake = await stakingContract.methods.getTotalStaked(member).call();
             levelStake += parseInt(stake);
@@ -576,12 +580,11 @@ async function updateLevelData(level) {
 
         membersHtml = (await Promise.all(memberPromises)).join('');
 
-        // 3. UI अपडेट करें
+        // एक्सिस्टिंग डिटेल्स को रिमूव करें
         const existingDetails = levelCard.querySelector('.level-details-container');
-        if (existingDetails) {
-            existingDetails.remove();
-        }
+        if (existingDetails) existingDetails.remove();
 
+        // नया HTML जोड़ें
         const detailsHtml = `
             <div class="level-details-container">
                 <div class="level-details-toggle">Show Members</div>
@@ -597,7 +600,7 @@ async function updateLevelData(level) {
 
         levelCard.insertAdjacentHTML('beforeend', detailsHtml);
 
-        // 4. Level 1 के लिए विशेष हैंडलिंग
+        // Level 1 के लिए विशेष हैंडलिंग
         if (level === 1) {
             const statusElement = levelCard.querySelector('.status');
             if (statusElement) {
@@ -606,17 +609,27 @@ async function updateLevelData(level) {
             }
         }
 
-        // 5. टॉगल फंक्शनैलिटी जोड़ें
-        levelCard.querySelector('.level-details-toggle').addEventListener('click', (e) => {
-            const list = e.target.nextElementSibling;
-            list.classList.toggle('active');
-            e.target.textContent = list.classList.contains('active') ? 'Hide Members' : 'Show Members';
-        });
+        // टॉगल इवेंट लिसनर जोड़ें (नल चेक के साथ)
+        const toggleBtn = levelCard.querySelector('.level-details-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', (e) => {
+                const list = e.target.nextElementSibling;
+                if (list) {
+                    list.classList.toggle('active');
+                    e.target.textContent = list.classList.contains('active') 
+                        ? 'Hide Members' 
+                        : 'Show Members';
+                }
+            });
+        }
 
-        // 6. काउंट और स्टेक अपडेट करें
-        levelCard.querySelector('#level${level}Count').textContent = members.length;
-        levelCard.querySelector('#level${level}Stake').textContent = 
-            web3.utils.fromWei(levelStake.toString(), 'ether') + ' VNST';
+        // काउंट और स्टेक अपडेट करें
+        const countElement = levelCard.querySelector(`#level${level}Count`);
+        const stakeElement = levelCard.querySelector(`#level${level}Stake`);
+        if (countElement) countElement.textContent = members.length;
+        if (stakeElement) {
+            stakeElement.textContent = `${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST`;
+        }
 
     } catch (error) {
         console.error(`Error updating level ${level} data:`, error);
