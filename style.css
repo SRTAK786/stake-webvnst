@@ -183,6 +183,39 @@ body::before {
   border-left: 3px solid var(--accent-color);
 }
 
+.rewards-section {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.rewards-card {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.reward-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.reward-label {
+  font-weight: bold;
+  color: #333;
+}
+
+.reward-value {
+  color: #3b82f6;
+  font-weight: bold;
+}
+
 /* Team Page Specific */
 .team-grid {
   display: grid;
