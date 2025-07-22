@@ -522,7 +522,7 @@ async function updateTeamPage() {
     if (!isConnected || !accounts[0]) return;
 
     try {
-        // सभी बेसिक डेटा एक साथ फेच करें (पहले जैसा ही)
+        // 1. बेसिक डेटा एक साथ फेच करें (ऑप्टिमाइज्ड)
         const [userLevel, referralEarnings, directRewards, rewards] = await Promise.all([
             stakingContract.methods.getUserLevel(accounts[0]).call(),
             stakingContract.methods.getReferralEarnings(accounts[0]).call(),
@@ -530,7 +530,7 @@ async function updateTeamPage() {
             stakingContract.methods.getPendingRewards(accounts[0]).call()
         ]);
 
-        // बेसिक इन्फो अपडेट (पहले जैसा ही)
+        // 2. बेसिक इन्फो अपडेट करें
         document.getElementById('userLevel').textContent = userLevel;
         document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
         document.getElementById('totalTeamStake').textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
@@ -538,49 +538,88 @@ async function updateTeamPage() {
         document.getElementById('directIncome').textContent = web3.utils.fromWei(directRewards, 'ether') + ' USDT';
         document.getElementById('roiIncome').textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
-        // ========== नया कोड यहाँ से शुरू ========== //
-        // लेवल वाइस डिटेल्स जोड़ें
+        // 3. सभी लेवल्स के लिए डेटा प्रोसेस करें
+        const levelUpdates = [];
         for (let level = 1; level <= 5; level++) {
-            const levelCard = document.querySelector(`#level${level}Count`).closest('.team-card');
-            const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
-            
-            let levelStake = 0;
-            let membersHtml = '';
-            
-            // प्रत्येक मेंबर का डेटा फेच करें
-            for (const member of members) {
-                const stake = await stakingContract.methods.getTotalStaked(member).call();
-                levelStake += parseInt(stake);
-                membersHtml += `
-                    <div class="member-item">
-                        <span>${member.substring(0,6)}...${member.substring(38)}</span>
-                        <span>${web3.utils.fromWei(stake, 'ether')} VNST</span>
-                    </div>
-                `;
-            }
+            levelUpdates.push(updateLevelData(level));
+        }
+        await Promise.all(levelUpdates);
 
-            // टॉगल बटन और मेंबर्स लिस्ट जोड़ें
-            levelCard.innerHTML += `
+    } catch (error) {
+        console.error("Team page update error:", error);
+        // एरर को यूजर को दिखाएं (वैकल्पिक)
+        alert("Team data could not be loaded. Please try again later.");
+    }
+}
+
+async function updateLevelData(level) {
+    try {
+        const levelCard = document.querySelector(`#level${level}Count`).closest('.team-card');
+        if (!levelCard) return;
+
+        // 1. मेंबर्स और उनका स्टेक डेटा फेच करें
+        const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
+        let levelStake = 0;
+        let membersHtml = '';
+
+        // 2. प्रत्येक मेंबर का डेटा प्रोसेस करें
+        const memberPromises = members.map(async (member) => {
+            const stake = await stakingContract.methods.getTotalStaked(member).call();
+            levelStake += parseInt(stake);
+            return `
+                <div class="member-item">
+                    <span>${member.substring(0,6)}...${member.substring(38)}</span>
+                    <span>${web3.utils.fromWei(stake, 'ether')} VNST</span>
+                </div>
+            `;
+        });
+
+        membersHtml = (await Promise.all(memberPromises)).join('');
+
+        // 3. UI अपडेट करें
+        const existingDetails = levelCard.querySelector('.level-details-container');
+        if (existingDetails) {
+            existingDetails.remove();
+        }
+
+        const detailsHtml = `
+            <div class="level-details-container">
                 <div class="level-details-toggle">Show Members</div>
                 <div class="level-members-list">
                     ${membersHtml}
-                    <div class="member-item" style="font-weight:bold;border-top:1px solid var(--accent-color);">
+                    <div class="member-item total-item">
                         <span>Total Level ${level} Stake:</span>
                         <span>${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST</span>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
 
-            // टॉगल इवेंट लिसनर
-            levelCard.querySelector('.level-details-toggle').addEventListener('click', (e) => {
-                const list = e.target.nextElementSibling;
-                list.classList.toggle('active');
-                e.target.textContent = list.classList.contains('active') ? 'Hide Members' : 'Show Members';
-            });
+        levelCard.insertAdjacentHTML('beforeend', detailsHtml);
+
+        // 4. Level 1 के लिए विशेष हैंडलिंग
+        if (level === 1) {
+            const statusElement = levelCard.querySelector('.status');
+            if (statusElement) {
+                statusElement.textContent = members.length > 0 ? 'Unlocked' : 'Locked';
+                statusElement.className = `status ${members.length > 0 ? 'status-unlocked' : 'status-locked'}`;
+            }
         }
 
+        // 5. टॉगल फंक्शनैलिटी जोड़ें
+        levelCard.querySelector('.level-details-toggle').addEventListener('click', (e) => {
+            const list = e.target.nextElementSibling;
+            list.classList.toggle('active');
+            e.target.textContent = list.classList.contains('active') ? 'Hide Members' : 'Show Members';
+        });
+
+        // 6. काउंट और स्टेक अपडेट करें
+        levelCard.querySelector('#level${level}Count').textContent = members.length;
+        levelCard.querySelector('#level${level}Stake').textContent = 
+            web3.utils.fromWei(levelStake.toString(), 'ether') + ' VNST';
+
     } catch (error) {
-        console.error("Team page update error:", error);
+        console.error(`Error updating level ${level} data:`, error);
     }
 }
 
