@@ -160,7 +160,8 @@ async function connectMetaMask() {
         updateWalletButton();
         initContracts();
         await updateUI();
-        
+        initRewardsDisplay();
+
         toggleWalletModal();
     } catch (error) {
         console.error("Connection failed:", error);
@@ -247,6 +248,7 @@ async function stakeTokens() {
         console.log("Staking successful:", result);
         alert("Staking successful!");
         await updateUI();
+        await displayAllRewards();
     } catch (error) {
         console.error("Staking failed:", error);
         alert("Staking failed: " + error.message);
@@ -274,6 +276,7 @@ async function claimRewards() {
         await stakingContract.methods.claimRewards().send({ from: accounts[0] });
         alert("Success!");
         updateUI();
+        await displayAllRewards();
     } catch (error) {
         console.error("Claim failed:", error);
         alert("Error: " + error.message);
@@ -348,6 +351,94 @@ async function loadDailyVNTRewards() {
     console.error("Error loading daily rewards:", error);
     rewardsDisplay.innerHTML = '<p class="error">Error loading rewards</p>';
   }
+}
+
+async function displayAllRewards() {
+  if (!isConnected || !accounts[0]) return;
+
+  const user = await stakingContract.methods.users(accounts[0]).call();
+  const vnstPrice = await stakingContract.methods.vnstPrice().call() / 1e18;
+  const vntPrice = await stakingContract.methods.vntPrice().call() / 1e18;
+
+  // 1. Auto-Staked VNST (Level 1 Only)
+  const level1Deposit = user.levelDeposits[0] || 0;
+  const autoStakeVNST = (level1Deposit * 5) / 100;
+  document.getElementById('autoStakeDisplay').innerHTML = `
+    <div class="reward-item">
+      <span>From Level 1:</span>
+      <span>${web3.utils.fromWei(autoStakeVNST.toString(), 'ether')} VNST (5%)</span>
+    </div>
+    <small>Automatically staked from your direct referrals</small>
+  `;
+
+  // 2. Direct USDT Rewards (Level 2-5)
+  let directUsdtHtml = '';
+  let totalDirectUSDT = 0;
+  const directPercents = [0, 0, 3, 2, 1, 1]; // Level 0-5 (Level 1 is VNST)
+
+  for (let level = 2; level <= 5; level++) {
+    const levelDeposit = user.levelDeposits[level-1] || 0;
+    if (levelDeposit > 0) {
+      const usdtValue = (levelDeposit * vnstPrice) / 1e18;
+      const reward = (usdtValue * directPercents[level]) / 100;
+      totalDirectUSDT += reward;
+      directUsdtHtml += `
+        <div class="reward-item">
+          <span>Level ${level}:</span>
+          <span>${reward.toFixed(4)} USDT (${directPercents[level]}%)</span>
+        </div>
+      `;
+    }
+  }
+
+  document.getElementById('directUsdtDisplay').innerHTML = `
+    ${directUsdtHtml}
+    <div class="reward-total">
+      <span>Total Direct USDT:</span>
+      <span>${totalDirectUSDT.toFixed(4)} USDT</span>
+    </div>
+  `;
+
+  // 3. ROI of ROI USDT (All Levels)
+  let roiOfRoiHtml = '';
+  let totalRoiOfRoiUSDT = 0;
+  const roiPercents = [2, 2, 2, 2, 2]; // Level 1-5
+
+  for (let level = 0; level < 5; level++) {
+    const levelDeposit = user.levelDeposits[level] || 0;
+    if (levelDeposit > 0) {
+      const vntReward = levelDeposit * 2;
+      const usdtValue = (vntReward * vntPrice) / 1e18;
+      const reward = (usdtValue * roiPercents[level]) / 100;
+      totalRoiOfRoiUSDT += reward;
+      roiOfRoiHtml += `
+        <div class="reward-item">
+          <span>Level ${level+1}:</span>
+          <span>${reward.toFixed(4)} USDT (2%)</span>
+        </div>
+      `;
+    }
+  }
+
+  document.getElementById('roiOfRoiDisplay').innerHTML = `
+    ${roiOfRoiHtml}
+    <div class="reward-total">
+      <span>Total ROI of ROI:</span>
+      <span>${totalRoiOfRoiUSDT.toFixed(4)} USDT</span>
+    </div>
+    <small>Based on 2X VNT value of team stake</small>
+  `;
+}
+
+// Initialize and auto-update
+async function initRewardsDisplay() {
+  await displayAllRewards();
+  setInterval(displayAllRewards, 30000); // Update every 30 seconds
+  
+  // Listen for contract events
+  stakingContract.events.Staked({}, () => displayAllRewards());
+  stakingContract.events.VNSTPriceUpdated({}, () => displayAllRewards());
+  stakingContract.events.VNTPriceUpdated({}, () => displayAllRewards());
 }
 
 async function updateTeamStats() {
