@@ -37,11 +37,17 @@
                     <div class="info-text">Withdrawal fee: 5%</div>
                 </div>
 
-                <div class="card">
+                <div class="card rewards-container">
                   <h3>Your Daily VNT Rewards</h3>
                   <div id="dailyVntRewardsDisplay">
                     <div class="loading-spinner"></div>
                   </div>
+                  <div class="card">
+                     <h3>Auto-Staked VNST (Level 1)</h3>
+                     <div id="autoStakeDisplay">
+                       <div class="loading-spinner"></div>
+                     </div>
+                   </div>
                 </div>
                 
                 <div class="card">
@@ -50,24 +56,6 @@
                         <!-- Dynamic stakes will be added here -->
                         <p>No active stakes found</p>
                     </div>
-
-                    <div class="rewards-section">
-                        <h3>Your Staking Rewards</h3>
-                        <div class="rewards-card">
-                          <div class="reward-item">
-                            <span class="reward-label">Pending VNT Rewards:</span>
-                            <span class="reward-value" id="pendingVntRewards">0</span>
-                          </div>
-                          <div class="reward-item">
-                            <span class="reward-label">Pending USDT Rewards:</span>
-                            <span class="reward-value" id="pendingUsdtRewards">0</span>
-                          </div>
-                          <div class="reward-item">
-                            <span class="reward-label">Total Claimed Rewards:</span>
-                            <span class="reward-value" id="totalClaimedRewards">0</span>
-                          </div>
-                        </div>
-                      </div>
                     <button class="btn" id="claimTokenBtn">Claim Rewards</button>
                     <button id="claimBatchBtn" class="btn btn-secondary" disabled>Claim Rewards (Batch)</button>
                     <p id="batchStatus" class="text-muted small mt-2"></p>
