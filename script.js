@@ -169,9 +169,57 @@ async function connectMetaMask() {
     }
 }
 
+// Wallet Connect को पूरी तरह implement करने का तरीका
 async function connectWalletConnect() {
-    alert("WalletConnect integration would go here in a full implementation");
-    toggleWalletModal();
+    try {
+        // 1. WalletConnect provider को initialize करें
+        const provider = new WalletConnectProvider({
+            rpc: {
+                56: "https://bsc-dataseed.binance.org/", // BSC Mainnet
+                97: "https://data-seed-prebsc-1-s1.binance.org:8545/" // BSC Testnet
+            }
+        });
+
+        // 2. Connection स्थापित करें
+        await provider.enable();
+        
+        // 3. Web3 instance create करें
+        web3 = new Web3(provider);
+        
+        // 4. Accounts प्राप्त करें
+        accounts = await web3.eth.getAccounts();
+        
+        // 5. Connection status अपडेट करें
+        isConnected = true;
+        updateWalletButton();
+        initContracts();
+        await updateUI();
+        
+        // 6. Modal बंद करें
+        toggleWalletModal();
+        
+        // 7. सफलता सूचना दिखाएं
+        showNotification(`WalletConnect से कनेक्ट हुआ: ${accounts[0].substring(0,6)}...${accounts[0].substring(38)}`);
+        
+        // 8. Disconnect event के लिए listener जोड़ें
+        provider.on("disconnect", (code, reason) => {
+            console.log(`WalletConnect disconnected: ${reason}`);
+            handleDisconnect();
+        });
+
+    } catch (error) {
+        console.error("WalletConnect connection failed:", error);
+        showNotification(`Connection failed: ${error.message}`, 'error');
+    }
+}
+
+// Disconnect handler function
+function handleDisconnect() {
+    isConnected = false;
+    accounts = [];
+    updateWalletButton();
+    showNotification("Wallet disconnected", 'warning');
+    // Additional cleanup if needed
 }
 
 function updateWalletButton() {
