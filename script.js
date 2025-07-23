@@ -172,7 +172,7 @@ function toggleWalletModal() {
     walletModal.style.display = isVisible ? 'none' : 'block';
     
     // Disable scroll when modal is open
-    document.body.style.overflow = isHidden ? 'hidden' : '';
+    document.body.style.overflow = isVisible ? 'hidden' : '';
 }
 
 function toggleMobileMenu() {
@@ -436,6 +436,7 @@ async function displayAllRewards() {
   if (!isConnected || !accounts[0]) return;
 
   const user = await stakingContract.methods.users(accounts[0]).call();
+  const levelDeposits = user.levelDeposits || [];
   const vnstPrice = await stakingContract.methods.vnstPrice().call() / 1e18;
   const vntPrice = await stakingContract.methods.vntPrice().call() / 1e18;
 
@@ -509,23 +510,24 @@ async function displayAllRewards() {
   `;
 }
 
+
 // Initialize and auto-update
 async function initRewardsDisplay() {
+  try {
     await displayAllRewards();
-    setInterval(displayAllRewards, 30000);
     
-    try {
-        stakingContract.events.Staked({fromBlock: 'latest'})
-            .on('data', () => displayAllRewards());
-            
-        stakingContract.events.VNSTPriceUpdated({fromBlock: 'latest'})
-            .on('data', () => displayAllRewards());
-            
-        stakingContract.events.VNTPriceUpdated({fromBlock: 'latest'})
-            .on('data', () => displayAllRewards());
-    } catch (error) {
-        console.error("Error setting up event listeners:", error);
-    }
+    // हर 30 सेकंड में अपडेट करें
+    setInterval(async () => {
+      try {
+        await displayAllRewards();
+      } catch (error) {
+        console.error("Error in rewards display update:", error);
+      }
+    }, 30000);
+    
+  } catch (error) {
+    console.error("Initial rewards display failed:", error);
+  }
 }
 
 async function updateTeamStats() {
