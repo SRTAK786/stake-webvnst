@@ -144,7 +144,12 @@ async function updateContractStats() {
 
 // Wallet functions
 function toggleWalletModal() {
-    walletModal.style.display = walletModal.style.display === 'block' ? 'none' : 'block';
+    const modal = document.getElementById('walletModal');
+    if (!modal) {
+        console.error('Wallet modal element not found');
+        return;
+    }
+    modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
 }
 
 function toggleMobileMenu() {
