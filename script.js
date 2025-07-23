@@ -109,6 +109,18 @@ async function updateHomeStats() {
     }
 }
 
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => notification.remove(), 500);
+    }, 3000);
+}
+
 async function updateContractStats() {
   if (!isConnected) return;
   
@@ -146,10 +158,16 @@ async function updateContractStats() {
 function toggleWalletModal() {
     const modal = document.getElementById('walletModal');
     if (!modal) {
-        console.error('Wallet modal element not found');
+        console.error('Wallet modal not found');
         return;
     }
-    modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+    
+    // Toggle modal display
+    const isHidden = modal.style.display !== 'block';
+    modal.style.display = isHidden ? 'block' : 'none';
+    
+    // Disable scroll when modal is open
+    document.body.style.overflow = isHidden ? 'hidden' : '';
 }
 
 function toggleMobileMenu() {
@@ -178,7 +196,7 @@ async function connectMetaMask() {
 async function connectWalletConnect() {
     try {
         // 1. WalletConnect provider को initialize करें
-        const provider = new WalletConnectProvider({
+        window.walletConnectProvider = new WalletConnectProvider({
             rpc: {
                 56: "https://bsc-dataseed.binance.org/", // BSC Mainnet
                 97: "https://data-seed-prebsc-1-s1.binance.org:8545/" // BSC Testnet
@@ -218,13 +236,16 @@ async function connectWalletConnect() {
     }
 }
 
-// Disconnect handler function
 function handleDisconnect() {
     isConnected = false;
     accounts = [];
     updateWalletButton();
     showNotification("Wallet disconnected", 'warning');
-    // Additional cleanup if needed
+    // Additional cleanup
+    if (window.walletConnectProvider) {
+        window.walletConnectProvider.disconnect();
+        window.walletConnectProvider = null;
+    }
 }
 
 function updateWalletButton() {
@@ -485,13 +506,21 @@ async function displayAllRewards() {
 
 // Initialize and auto-update
 async function initRewardsDisplay() {
-  await displayAllRewards();
-  setInterval(displayAllRewards, 30000); // Update every 30 seconds
-  
-  // Listen for contract events
-  stakingContract.events.Staked({}, () => displayAllRewards());
-  stakingContract.events.VNSTPriceUpdated({}, () => displayAllRewards());
-  stakingContract.events.VNTPriceUpdated({}, () => displayAllRewards());
+    await displayAllRewards();
+    setInterval(displayAllRewards, 30000);
+    
+    try {
+        stakingContract.events.Staked({fromBlock: 'latest'})
+            .on('data', () => displayAllRewards());
+            
+        stakingContract.events.VNSTPriceUpdated({fromBlock: 'latest'})
+            .on('data', () => displayAllRewards());
+            
+        stakingContract.events.VNTPriceUpdated({fromBlock: 'latest'})
+            .on('data', () => displayAllRewards());
+    } catch (error) {
+        console.error("Error setting up event listeners:", error);
+    }
 }
 
 async function updateTeamStats() {
