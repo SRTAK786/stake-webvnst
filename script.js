@@ -19,6 +19,7 @@ let vnstTokenContract;
 let stakingContract;
 let accounts = [];
 let isConnected = false;
+let walletConnectProvider = null;
 
 // Initialize the application
 window.addEventListener('DOMContentLoaded', async () => {
@@ -200,12 +201,18 @@ async function connectMetaMask() {
 // Wallet Connect को पूरी तरह implement करने का तरीका
 async function connectWalletConnect() {
     try {
-        // 1. WalletConnect provider को initialize करें
-        window.walletConnectProvider = new WalletConnectProvider({
+        if (typeof WalletConnectProvider === 'undefined') {
+            throw new Error("WalletConnect provider not loaded");
+        }
+        
+        // Provider को इनिशियलाइज़ करें
+        const provider = new WalletConnectProvider.default({
             rpc: {
                 56: "https://bsc-dataseed.binance.org/", // BSC Mainnet
                 97: "https://data-seed-prebsc-1-s1.binance.org:8545/" // BSC Testnet
-            }
+            },
+            chainId: 56, // Default to BSC Mainnet
+            bridge: "https://bridge.walletconnect.org"
         });
 
         // 2. Connection स्थापित करें
@@ -251,6 +258,8 @@ function handleDisconnect() {
         window.walletConnectProvider.disconnect();
         window.walletConnectProvider = null;
     }
+
+    showNotification("Wallet disconnected", 'warning');
 }
 
 function updateWalletButton() {
