@@ -20,8 +20,6 @@ let stakingContract;
 let accounts = [];
 let isConnected = false;
 
-let connectWalletBtn, walletModal, closeModal, metamaskBtn, walletConnectBtn;
-
 // Initialize the application
 window.addEventListener('DOMContentLoaded', async () => {
     console.log("Initializing Web3...");
