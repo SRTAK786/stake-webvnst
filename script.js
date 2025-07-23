@@ -20,6 +20,8 @@ let stakingContract;
 let accounts = [];
 let isConnected = false;
 
+let connectWalletBtn, walletModal, closeModal, metamaskBtn, walletConnectBtn;
+
 // Initialize the application
 window.addEventListener('DOMContentLoaded', async () => {
     console.log("Initializing Web3...");
@@ -58,6 +60,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         web3 = new Web3(window.web3.currentProvider);
     } else {
         console.log('Non-Ethereum browser detected. Consider installing MetaMask!');
+    }
+
+    if (!connectWalletBtn || !walletModal || !closeModal || !metamaskBtn || !walletConnectBtn) {
+        console.error("Required elements not found in DOM");
+        return;
     }
 
     // Event Listeners
@@ -157,14 +164,14 @@ async function updateContractStats() {
 // Wallet functions
 function toggleWalletModal() {
     const modal = document.getElementById('walletModal');
-    if (!modal) {
-        console.error('Wallet modal not found');
+    if (!walletModal) {
+        console.error('Wallet modal not initialized');
         return;
     }
     
     // Toggle modal display
-    const isHidden = modal.style.display !== 'block';
-    modal.style.display = isHidden ? 'block' : 'none';
+    const isVisible = walletModal.style.display === 'block';
+    walletModal.style.display = isVisible ? 'none' : 'block';
     
     // Disable scroll when modal is open
     document.body.style.overflow = isHidden ? 'hidden' : '';
