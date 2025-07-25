@@ -444,76 +444,88 @@ async function loadDailyVNTRewards() {
 async function displayAllRewards() {
   if (!isConnected || !accounts[0]) return;
 
-  const user = await stakingContract.methods.users(accounts[0]).call();
-  const levelDeposits = user.levelDeposits || [];
-  const directRewardPercents = await stakingContract.methods.directRewardPercents().call();
-  const roiOfRoiPercents = await stakingContract.methods.roiOfRoiPercents().call();
+  try {
+    // Get all required data in one call
+    const [user, directRewardPercents, roiOfRoiPercents, rewards] = await Promise.all([
+      stakingContract.methods.users(accounts[0]).call(),
+      stakingContract.methods.directRewardPercents.call(), // Fixed call
+      stakingContract.methods.roiOfRoiPercents.call(),     // Fixed call
+      stakingContract.methods.getPendingRewards(accounts[0]).call()
+    ]);
 
-  // 1. Auto-Staked VNST (Level 1 Only)
-  const level1Deposit = user.levelDeposits[0] || 0;
-  const autoStakeVNST = (level1Deposit * directRewardPercents[0]) / 100;
-  document.getElementById('autoStakeDisplay').innerHTML = `
-    <div class="reward-item">
-      <span>From Level 1:</span>
-      <span>${web3.utils.fromWei(autoStakeVNST.toString(), 'ether')} VNST (${directRewardPercents[0]}%)</span>
-    </div>
-    <small>Automatically staked from your direct referrals</small>
-  `;
+    const levelDeposits = user.levelDeposits || [];
 
-  // 2. Direct USDT Rewards (Level 2-5)
-  let directUsdtHtml = '';
-  let totalDirectUSDT = 0;
-  
-  for (let level = 1; level < 5; level++) {
-    const levelDeposit = user.levelDeposits[level] || 0;
-    if (levelDeposit > 0) {
-      const vnstValue = web3.utils.fromWei(levelDeposit, 'ether');
-      const reward = (vnstValue * directRewardPercents[level]) / 100;
-      totalDirectUSDT += reward;
-      directUsdtHtml += `
-        <div class="reward-item">
-          <span>Level ${level+1}:</span>
-          <span>${reward.toFixed(4)} USDT (${directRewardPercents[level]}%)</span>
-        </div>
-      `;
+    // 1. Auto-Staked VNST (Level 1 Only)
+    const level1Deposit = levelDeposits[0] || 0;
+    const autoStakeVNST = (level1Deposit * directRewardPercents[0]) / 100;
+    document.getElementById('autoStakeDisplay').innerHTML = `
+      <div class="reward-item">
+        <span>From Level 1:</span>
+        <span>${web3.utils.fromWei(autoStakeVNST.toString(), 'ether')} VNST (${directRewardPercents[0]}%)</span>
+      </div>
+      <small>Automatically staked from your direct referrals</small>
+    `;
+
+    // 2. Direct USDT Rewards (Level 2-5)
+    let directUsdtHtml = '';
+    let totalDirectUSDT = 0;
+    
+    for (let level = 1; level < 5; level++) {
+      const levelDeposit = levelDeposits[level] || 0;
+      if (levelDeposit > 0) {
+        const vnstValue = web3.utils.fromWei(levelDeposit, 'ether');
+        const reward = (vnstValue * directRewardPercents[level]) / 100;
+        totalDirectUSDT += reward;
+        directUsdtHtml += `
+          <div class="reward-item">
+            <span>Level ${level+1}:</span>
+            <span>${reward.toFixed(4)} USDT (${directRewardPercents[level]}%)</span>
+          </div>
+        `;
+      }
     }
-  }
 
-  document.getElementById('directUsdtDisplay').innerHTML = `
-    ${directUsdtHtml}
-    <div class="reward-total">
-      <span>Total Direct USDT:</span>
-      <span>${totalDirectUSDT.toFixed(4)} USDT</span>
-    </div>
-  `;
+    document.getElementById('directUsdtDisplay').innerHTML = `
+      ${directUsdtHtml}
+      <div class="reward-total">
+        <span>Total Direct USDT:</span>
+        <span>${totalDirectUSDT.toFixed(4)} USDT</span>
+      </div>
+    `;
 
-  // 3. ROI of ROI USDT (All Levels)
-  let roiOfRoiHtml = '';
-  let totalRoiOfRoiUSDT = 0;
+    // 3. ROI of ROI USDT (All Levels)
+    let roiOfRoiHtml = '';
+    let totalRoiOfRoiUSDT = 0;
 
-  for (let level = 0; level < 5; level++) {
-    const levelDeposit = user.levelDeposits[level] || 0;
-    if (levelDeposit > 0) {
-      const vntReward = web3.utils.fromWei(levelDeposit, 'ether') * 2; // 2X VNT reward
-      const reward = (vntReward * roiOfRoiPercents[level]) / 100;
-      totalRoiOfRoiUSDT += reward;
-      roiOfRoiHtml += `
-        <div class="reward-item">
-          <span>Level ${level+1}:</span>
-          <span>${reward.toFixed(4)} USDT (${roiOfRoiPercents[level]}%)</span>
-        </div>
-      `;
+    for (let level = 0; level < 5; level++) {
+      const levelDeposit = levelDeposits[level] || 0;
+      if (levelDeposit > 0) {
+        const vntReward = web3.utils.fromWei(levelDeposit, 'ether') * 2; // 2X VNT reward
+        const reward = (vntReward * roiOfRoiPercents[level]) / 100;
+        totalRoiOfRoiUSDT += reward;
+        roiOfRoiHtml += `
+          <div class="reward-item">
+            <span>Level ${level+1}:</span>
+            <span>${reward.toFixed(4)} USDT (${roiOfRoiPercents[level]}%)</span>
+          </div>
+        `;
+      }
     }
-  }
 
-  document.getElementById('roiOfRoiDisplay').innerHTML = `
-    ${roiOfRoiHtml}
-    <div class="reward-total">
-      <span>Total ROI of ROI:</span>
-      <span>${totalRoiOfRoiUSDT.toFixed(4)} USDT</span>
-    </div>
-    <small>Based on 2X VNT value of team stake</small>
-  `;
+    document.getElementById('roiOfRoiDisplay').innerHTML = `
+      ${roiOfRoiHtml}
+      <div class="reward-total">
+        <span>Total ROI of ROI:</span>
+        <span>${totalRoiOfRoiUSDT.toFixed(4)} USDT</span>
+      </div>
+      <small>Based on 2X VNT value of team stake</small>
+    `;
+
+  } catch (error) {
+    console.error("Error displaying rewards:", error);
+    // Show error to user
+    showNotification("Error loading rewards data", "error");
+  }
 }
 
 // Initialize and auto-update
