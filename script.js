@@ -779,7 +779,43 @@ async function updateTeamPage() {
     if (!isConnected || !accounts[0]) return;
 
     try {
-        // सभी बेसिक डेटा एक साथ फेच करें (पहले जैसा ही)
+        // Check if we're on the team page
+        if (!window.location.pathname.includes('team.html')) return;
+
+        // Get all required elements
+        const elements = {
+            userLevel: document.getElementById('userLevel'),
+            totalTeamMembers: document.getElementById('totalTeamMembers'),
+            totalTeamStake: document.getElementById('totalTeamStake'),
+            totalReferrals: document.getElementById('totalReferrals'),
+            directIncome: document.getElementById('directIncome'),
+            roiIncome: document.getElementById('roiIncome'),
+            level1Count: document.getElementById('level1Count'),
+            level1Stake: document.getElementById('level1Stake'),
+            level1Status: document.getElementById('level1Status'),
+            level2Count: document.getElementById('level2Count'),
+            level2Stake: document.getElementById('level2Stake'),
+            level2Status: document.getElementById('level2Status'),
+            level3Count: document.getElementById('level3Count'),
+            level3Stake: document.getElementById('level3Stake'),
+            level3Status: document.getElementById('level3Status'),
+            level4Count: document.getElementById('level4Count'),
+            level4Stake: document.getElementById('level4Stake'),
+            level4Status: document.getElementById('level4Status'),
+            level5Count: document.getElementById('level5Count'),
+            level5Stake: document.getElementById('level5Stake'),
+            level5Status: document.getElementById('level5Status')
+        };
+
+        // Verify all elements exist
+        for (const [key, element] of Object.entries(elements)) {
+            if (!element) {
+                console.error(`Element ${key} not found in DOM`);
+                return;
+            }
+        }
+
+        // Fetch all data from contract
         const [userLevel, referralEarnings, directRewards, rewards] = await Promise.all([
             stakingContract.methods.getUserLevel(accounts[0]).call(),
             stakingContract.methods.getReferralEarnings(accounts[0]).call(),
@@ -787,57 +823,37 @@ async function updateTeamPage() {
             stakingContract.methods.getPendingRewards(accounts[0]).call()
         ]);
 
-        // बेसिक इन्फो अपडेट (पहले जैसा ही)
-        document.getElementById('userLevel').textContent = userLevel;
-        document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
-        document.getElementById('totalTeamStake').textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
-        document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
-        document.getElementById('directIncome').textContent = web3.utils.fromWei(directRewards, 'ether') + ' USDT';
-        document.getElementById('roiIncome').textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
+        // Update basic team stats
+        elements.userLevel.textContent = userLevel;
+        elements.totalTeamMembers.textContent = referralEarnings.referralCount;
+        elements.totalTeamStake.textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
+        elements.totalReferrals.textContent = referralEarnings.referralCount;
+        elements.directIncome.textContent = web3.utils.fromWei(directRewards, 'ether') + ' USDT';
+        elements.roiIncome.textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
-        // ========== नया कोड यहाँ से शुरू ========== //
-        // लेवल वाइस डिटेल्स जोड़ें
+        // Update level-wise data
         for (let level = 1; level <= 5; level++) {
-            const levelCard = document.querySelector(`#level${level}Count`).closest('.team-card');
             const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
-            
             let levelStake = 0;
-            let membersHtml = '';
             
-            // प्रत्येक मेंबर का डेटा फेच करें
+            // Calculate total stake for this level
             for (const member of members) {
                 const stake = await stakingContract.methods.getTotalStaked(member).call();
                 levelStake += parseInt(stake);
-                membersHtml += `
-                    <div class="member-item">
-                        <span>${member.substring(0,6)}...${member.substring(38)}</span>
-                        <span>${web3.utils.fromWei(stake, 'ether')} VNST</span>
-                    </div>
-                `;
             }
 
-            // टॉगल बटन और मेंबर्स लिस्ट जोड़ें
-            levelCard.innerHTML += `
-                <div class="level-details-toggle">Show Members</div>
-                <div class="level-members-list">
-                    ${membersHtml}
-                    <div class="member-item" style="font-weight:bold;border-top:1px solid var(--accent-color);">
-                        <span>Total Level ${level} Stake:</span>
-                        <span>${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST</span>
-                    </div>
-                </div>
-            `;
-
-            // टॉगल इवेंट लिसनर
-            levelCard.querySelector('.level-details-toggle').addEventListener('click', (e) => {
-                const list = e.target.nextElementSibling;
-                list.classList.toggle('active');
-                e.target.textContent = list.classList.contains('active') ? 'Hide Members' : 'Show Members';
-            });
+            // Update level stats
+            elements[`level${level}Count`].textContent = members.length;
+            elements[`level${level}Stake`].textContent = web3.utils.fromWei(levelStake.toString(), 'ether') + ' VNST';
+            
+            // Check if level is unlocked
+            const isUnlocked = await stakingContract.methods.isLevelUnlocked(accounts[0], level).call();
+            elements[`level${level}Status`].textContent = isUnlocked ? 'Unlocked' : 'Locked';
+            elements[`level${level}Status`].className = isUnlocked ? 'status-unlocked' : 'status-locked';
         }
 
     } catch (error) {
-        console.error("Team page update error:", error);
+        console.error("Error updating team page:", error);
     }
 }
 
