@@ -559,25 +559,6 @@ async function displayAllRewards() {
   }
 }
 
-// Initialize and auto-update
-async function initRewardsDisplay() {
-  try {
-    await displayAllRewards();
-    
-    // हर 30 सेकंड में अपडेट करें
-    setInterval(async () => {
-      try {
-        await displayAllRewards();
-      } catch (error) {
-        console.error("Error in rewards display update:", error);
-      }
-    }, 30000);
-    
-  } catch (error) {
-    console.error("Initial rewards display failed:", error);
-  }
-}
-
 async function updateTeamStats() {
   if (!isConnected || !accounts[0]) return;
   
@@ -871,14 +852,6 @@ async function updateTeamPage() {
     console.error("Error updating team page:", error);
     showNotification("Error loading team data", "error");
   }
-}
-
-async function updateTeamLevels() {
-    const levelUpdates = [];
-    for (let level = 1; level <= 5; level++) {
-        levelUpdates.push(updateSingleLevel(level));
-    }
-    await Promise.all(levelUpdates);
 }
 
 async function updateSingleLevel(level) {
