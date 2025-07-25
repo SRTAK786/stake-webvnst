@@ -101,18 +101,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         if (claimTokenBtn) claimTokenBtn.addEventListener('click', claimRewards);
         if (copyReferralBtn) copyReferralBtn.addEventListener('click', copyReferralLink);
         if (claimBatchBtn) claimBatchBtn.addEventListener('click', claimRewardsBatch);
-        if (document.getElementById('calculateROIBtn')) {
-          document.getElementById('calculateROIBtn').addEventListener('click', async () => {
-            const amount = document.getElementById('stakeAmount').value;
-            if (!amount) return alert("Please enter stake amount first");
-        
-            const result = await calculateROI(amount, 365);
-            document.getElementById('roiResult').innerHTML = `
-              <p>Estimated Annual Reward: ${result.estimatedReward} VNT</p>
-              <p>ROI: ${result.roiPercentage}%</p>
-        `    ;
-        });
-      }
     }
 
     if (window.location.pathname.includes('stake.html')) {
