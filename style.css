@@ -351,6 +351,14 @@ body::before {
   }
 }
 
+#pendingVntRewards, #pendingUsdtRewards {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--secondary-color);
+  margin: 0.5rem 0;
+  text-shadow: 0 0 5px rgba(255, 179, 0, 0.3);
+}
+
 /* Team Page Specific */
 .team-grid {
   display: grid;
@@ -453,6 +461,22 @@ body::before {
   background: linear-gradient(45deg, #FF9800, #FFC107);
 }
 
+/* Buttons */
+.btn-secondary {
+  background: linear-gradient(45deg, #6c757d, #5a6268) !important;
+  color: white !important;
+}
+
+/* Text classes */
+.text-muted {
+  color: #6c757d !important;
+  font-size: 0.9rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem !important;
+}
+
 /* Animations */
 @keyframes particleMove {
   0% { background-position: 0 0; }
@@ -525,3 +549,41 @@ body::before {
 body.no-scroll {
     overflow: hidden;
 }
+
+/* Team page status styles */
+.status-unlocked {
+  color: #2ecc71;
+  font-weight: bold;
+  background: rgba(46, 204, 113, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.status-locked {
+  color: #e74c3c;
+  font-weight: bold;
+  background: rgba(231, 76, 60, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+/* Team cards */
+.team-stat {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.team-stat .label {
+  color: var(--accent-color);
+  font-size: 0.9rem;
+}
+
+.team-stat .value {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
