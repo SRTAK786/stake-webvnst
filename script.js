@@ -547,44 +547,6 @@ async function displayAllRewards() {
   }
 }
 
-async function updateTeamStats() {
-  if (!isConnected || !accounts[0]) return;
-  
-  try {
-    const teamContainer = document.getElementById('teamLevelsContainer');
-    if (!teamContainer) return;
-
-    teamContainer.innerHTML = ''; // Clear previous data
-    
-    for (let level = 1; level <= 5; level++) {
-      // Get team members for this level
-      const members = await stakingContract.methods.getTeamUsers(accounts[0], level-1).call();
-      
-      // Calculate total stake for this level
-      let levelStake = 0;
-      for (const member of members) {
-        const stake = await stakingContract.methods.getTotalStaked(member).call();
-        levelStake += parseInt(stake);
-      } 
-
-      // Create level card HTML
-      const levelCard = `
-        <div class="level-card">
-          <h4>Level ${level}</h4>
-          <div class="level-stats">
-            <p><span class="stat-label">Members:</span> <span class="stat-value">${members.length}</span></p>
-            <p><span class="stat-label">Total Stake:</span> <span class="stat-value">${web3.utils.fromWei(levelStake.toString(), 'ether')} VNST</span></p>
-          </div>
-        </div>
-      `;
-      
-      teamContainer.innerHTML += levelCard;
-    }
-  } catch (error) {
-    console.error("Error fetching team stats:", error);
-  }
-}
-
 async function showWithdrawHistory() {
   if (!isConnected || !accounts[0]) return;
   
@@ -692,7 +654,7 @@ async function updateUI() {
         }
 
         await updateContractStats();
-        await updateTeamStats();
+        
         await loadDailyVNTRewards();
         
         // 4. Update referral link
@@ -791,93 +753,25 @@ async function updateTeamPage() {
   if (!isConnected || !accounts[0]) return;
 
   try {
-    // यह सुनिश्चित करें कि आप team.html पेज पर हैं
     if (!window.location.pathname.includes('team.html')) return;
 
-    // सभी लेवल्स के डेटा एक साथ फ़ेच करें
-    const [userLevel, referralEarnings, directRewards, rewards] = await Promise.all([
-      stakingContract.methods.getUserLevel(accounts[0]).call(),
+    // Get only total team data
+    const [referralEarnings, rewards] = await Promise.all([
       stakingContract.methods.getReferralEarnings(accounts[0]).call(),
-      stakingContract.methods.getTotalReferralEarnings(accounts[0]).call(),
       stakingContract.methods.getPendingRewards(accounts[0]).call()
     ]);
 
-    // बेसिक टीम स्टैट्स अपडेट करें
-    document.getElementById('userLevel').textContent = userLevel;
+    // Update only basic stats
     document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
-    document.getElementById('totalTeamStake').textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
+    document.getElementById('totalTeamStake').textContent = 
+      web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
     document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
-    document.getElementById('directIncome').textContent = web3.utils.fromWei(directRewards, 'ether') + ' USDT';
-    document.getElementById('roiIncome').textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
-
-    // प्रत्येक लेवल के लिए डेटा फ़ेच करें और दिखाएं
-    for (let level = 1; level <= 5; level++) {
-      const levelIndex = level - 1; // कॉन्ट्रैक्ट में लेवल्स 0-4 तक हैं
-      
-      // समानांतर में सभी डेटा फ़ेच करें
-      const [members, isUnlocked] = await Promise.all([
-        stakingContract.methods.getTeamUsers(accounts[0], levelIndex).call(),
-        stakingContract.methods.isLevelUnlocked(accounts[0], levelIndex).call()
-      ]);
-
-      // टीम स्टेक कैलकुलेट करें
-      let levelStake = 0;
-      for (const member of members) {
-        const stake = await stakingContract.methods.getTotalStaked(member).call();
-        levelStake += parseInt(stake);
-      }
-
-      // UI अपडेट करें
-      document.getElementById(`level${level}Count`).textContent = members.length;
-      document.getElementById(`level${level}Stake`).textContent = web3.utils.fromWei(levelStake.toString(), 'ether') + ' VNST';
-      
-      const statusElement = document.getElementById(`level${level}Status`);
-      statusElement.textContent = isUnlocked ? 'Unlocked' : 'Locked';
-      statusElement.className = isUnlocked ? 'status-unlocked' : 'status-locked';
-    }
+    document.getElementById('roiIncome').textContent = 
+      web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
   } catch (error) {
     console.error("Error updating team page:", error);
     showNotification("Error loading team data", "error");
-  }
-}
-
-async function updateSingleLevel(level) {
-    const [levelData, isUnlocked] = await Promise.all([
-        getLevelWiseData(level),
-        stakingContract.methods.isLevelUnlocked(accounts[0], level).call()
-    ]);
-    
-    document.getElementById(`level${level}Count`).textContent = levelData ? levelData.members.length : 0;
-    document.getElementById(`level${level}Stake`).textContent = levelData ? web3.utils.fromWei(levelData.totalStake.toString(), 'ether') + ' VNST' : '0 VNST';
-    document.getElementById(`level${level}Status`).textContent = isUnlocked ? 'Unlocked' : 'Locked';
-    document.getElementById(`level${level}Status`).className = isUnlocked ? 'status-unlocked' : 'status-locked';
-}
-
-async function getLevelWiseData(level) {
-  if (!isConnected || !accounts[0]) return null;
-  
-  try {
-    const data = {
-      members: await stakingContract.methods.getTeamUsers(accounts[0], level-1).call(),
-      totalStake: 0,
-      details: []
-    };
-    
-    // Calculate stake for each member
-    for (const member of data.members) {
-      const stake = await stakingContract.methods.getTotalStaked(member).call();
-      data.totalStake += parseInt(stake);
-      data.details.push({
-        address: member,
-        stake: web3.utils.fromWei(stake, 'ether')
-      });
-    }
-    
-    return data;
-  } catch (error) {
-    console.error(`Error getting level ${level} data:`, error);
-    return null;
   }
 }
 
