@@ -760,9 +760,6 @@ async function updateTeamPage() {
     document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
     document.getElementById('totalTeamStake').textContent = 
       web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
-    document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
-    document.getElementById('roiIncome').textContent = 
-      web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
   } catch (error) {
     console.error("Error updating team page:", error);
