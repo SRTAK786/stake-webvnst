@@ -321,6 +321,7 @@ async function calculateROI(amount, durationDays) {
     return {
       principal: amount,
       duration: durationDays,
+      estimatedReward: estimatedReward.toFixed(4),
       roiPercentage: ((estimatedReward / amount) * 100).toFixed(2)
     };
   } catch (error) {
@@ -441,10 +442,6 @@ async function loadDailyVNTRewards() {
     const dailyVNT = parseFloat(vntRewards) / 365;
     
     rewardsDisplay.innerHTML = `
-      <div class="reward-item">
-        <span class="reward-label">Estimated Daily:</span>
-        <span class="reward-value">${dailyVNT.toFixed(6)} VNT</span>
-      </div>
       <div class="reward-item">
         <span class="reward-label">Pending Total:</span>
         <span class="reward-value">${parseFloat(vntRewards).toFixed(4)} VNT</span>
