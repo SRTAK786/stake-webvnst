@@ -750,30 +750,23 @@ async function updateTeamPage() {
   try {
     if (!window.location.pathname.includes('team.html')) return;
 
-    // Check if elements exist before updating
-    const elementsExist = document.getElementById('totalTeamMembers') && 
-                         document.getElementById('totalTeamStake') && 
-                         document.getElementById('roiIncome');
-
-    if (!elementsExist) return; // Exit if elements don't exist
-
+    // Get only total team data
     const [referralEarnings, rewards] = await Promise.all([
       stakingContract.methods.getReferralEarnings(accounts[0]).call(),
       stakingContract.methods.getPendingRewards(accounts[0]).call()
     ]);
 
-    // Safe updates with null checks
-    const teamMembersEl = document.getElementById('totalTeamMembers');
-    const teamStakeEl = document.getElementById('totalTeamStake');
-    const roiIncomeEl = document.getElementById('roiIncome');
-
-    if (teamMembersEl) teamMembersEl.textContent = referralEarnings.referralCount;
-    if (teamStakeEl) teamStakeEl.textContent = web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
-    if (roiIncomeEl) roiIncomeEl.textContent = web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
+    // Update only basic stats
+    document.getElementById('totalTeamMembers').textContent = referralEarnings.referralCount;
+    document.getElementById('totalTeamStake').textContent = 
+      web3.utils.fromWei(referralEarnings.totalTeamDeposits, 'ether') + ' VNST';
+    document.getElementById('totalReferrals').textContent = referralEarnings.referralCount;
+    document.getElementById('roiIncome').textContent = 
+      web3.utils.fromWei(rewards[1], 'ether') + ' USDT';
 
   } catch (error) {
     console.error("Error updating team page:", error);
-    // Optional: showNotification("Error loading team data", "error");
+    showNotification("Error loading team data", "error");
   }
 }
 
