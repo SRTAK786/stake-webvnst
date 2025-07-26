@@ -208,7 +208,6 @@ async function connectMetaMask() {
         updateWalletButton();
         initContracts();
         await updateUI();
-        initRewardsDisplay();
 
         toggleWalletModal();
     } catch (error) {
@@ -322,7 +321,6 @@ async function calculateROI(amount, durationDays) {
     return {
       principal: amount,
       duration: durationDays,
-      estimatedReward: estimatedReward.toFixed(4),
       roiPercentage: ((estimatedReward / amount) * 100).toFixed(2)
     };
   } catch (error) {
