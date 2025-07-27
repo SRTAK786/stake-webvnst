@@ -690,6 +690,13 @@ async function updateUI() {
         await updateContractStats();
         
         await loadDailyVNTRewards();
+
+        if (document.getElementById('claimVNTBtn')) {
+           const [minVNT, minUSDT] = await stakingContract.methods.getMinWithdrawInfo().call();
+           const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+           document.getElementById('claimVNTBtn').disabled = rewards[0] < minVNT;
+           document.getElementById('claimUSDTBtn').disabled = rewards[1] < minUSDT;
+        }
         
         // 4. Update referral link
         if (document.getElementById('referralLink')) {
