@@ -379,7 +379,7 @@ async function claimRewards() {
         }
         
         // अब क्लेम करें
-        await stakingContract.methods.claimRewards().send({ from: accounts[0] });
+        await stakingContract.methods.claimAllRewards().send({ from: accounts[0] });
         alert("Success!");
         updateUI();
         await displayAllRewards();
