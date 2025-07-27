@@ -496,6 +496,39 @@ async function loadDailyVNTRewards() {
   }
 }
 
+async function loadDailyUSDTRewards() {
+  if (!isConnected || !accounts[0]) return;
+  
+  const usdtRewardsDisplay = document.getElementById('dailyUsdtRewardsDisplay');
+  if (!usdtRewardsDisplay) return;
+
+  try {
+    const [user, roiPercents] = await Promise.all([
+      stakingContract.methods.users(accounts[0]).call(),
+      stakingContract.methods.roiOfRoiPercents().call()
+    ]);
+    
+    let dailyUSDT = 0;
+    for (let i = 0; i < 5; i++) {
+      if (user.levelDeposits[i] > 0) {
+        const vntValue = web3.utils.fromWei(user.levelDeposits[i], 'ether') * 2 * 0.08; // 2X VNT at $0.08
+        dailyUSDT += (vntValue * roiPercents[i]) / 100 / 365; // Daily reward
+      }
+    }
+    
+    usdtRewardsDisplay.innerHTML = `
+      <div class="reward-item">
+        <span>Estimated Daily USDT:</span>
+        <span>${dailyUSDT.toFixed(6)} USDT</span>
+      </div>
+      <small>From team ROI (2% per level)</small>
+    `;
+  } catch (error) {
+    console.error("Error loading USDT rewards:", error);
+    usdtRewardsDisplay.innerHTML = '<p class="error">Error loading USDT rewards</p>';
+  }
+}
+
 async function displayAllRewards() {
   if (!isConnected || !accounts[0]) return;
 
@@ -687,6 +720,7 @@ async function updateUI() {
         await updateContractStats();
         
         await loadDailyVNTRewards();
+        await loadDailyUSDTRewards();
 
         if (document.getElementById('claimVNTBtn')) {
             try {
