@@ -497,35 +497,40 @@ async function loadDailyVNTRewards() {
 }
 
 async function loadDailyUSDTRewards() {
-  if (!isConnected || !accounts[0]) return;
-  
-  const usdtRewardsDisplay = document.getElementById('dailyUsdtRewardsDisplay');
-  if (!usdtRewardsDisplay) return;
-
   try {
-    const [user, roiPercents] = await Promise.all([
+    const [user, roiPercents, minUSDT] = await Promise.all([
       stakingContract.methods.users(accounts[0]).call(),
-      stakingContract.methods.roiOfRoiPercents().call()
+      stakingContract.methods.roiOfRoiPercents().call(),
+      stakingContract.methods.minUSDTWithdraw().call()
     ]);
+
+    let pendingUSDT = 0;
+    let dailyEstimate = 0;
     
-    let dailyUSDT = 0;
+    // पेंडिंग और डेली एस्टीमेट कैलकुलेशन
     for (let i = 0; i < 5; i++) {
       if (user.levelDeposits[i] > 0) {
-        const vntValue = web3.utils.fromWei(user.levelDeposits[i], 'ether') * 2 * 0.08; // 2X VNT at $0.08
-        dailyUSDT += (vntValue * roiPercents[i]) / 100 / 365; // Daily reward
+        const vntValue = web3.utils.fromWei(user.levelDeposits[i], 'ether') * 2 * 0.08;
+        pendingUSDT += (vntValue * roiPercents[i]) / 100;
+        dailyEstimate += (vntValue * roiPercents[i]) / 100 / 365;
       }
     }
-    
-    usdtRewardsDisplay.innerHTML = `
+
+    document.getElementById('usdtRewardsDisplay').innerHTML = `
       <div class="reward-item">
-        <span>Estimated Daily USDT:</span>
-        <span>${dailyUSDT.toFixed(6)} USDT</span>
+        <span>Pending USDT:</span> 
+        <span>${pendingUSDT.toFixed(6)} USDT</span>
       </div>
-      <small>From team ROI (2% per level)</small>
+      <div class="reward-item">
+        <span>Daily Estimate:</span>
+        <span>${dailyEstimate.toFixed(6)} USDT/day</span>
+      </div>
+      ${pendingUSDT < minUSDT ? 
+        `<small>Minimum ${web3.utils.fromWei(minUSDT, 'ether')} USDT required to claim</small>` :
+        '<small>Ready to claim!</small>'}
     `;
   } catch (error) {
-    console.error("Error loading USDT rewards:", error);
-    usdtRewardsDisplay.innerHTML = '<p class="error">Error loading USDT rewards</p>';
+    console.error("USDT rewards error:", error);
   }
 }
 
