@@ -371,20 +371,22 @@ async function claimVNTRewards() {
     }
     
     try {
-        const [minVNT] = await stakingContract.methods.getMinWithdrawInfo().call();
+        // सुधार हुआ भाग
+        const minInfo = await stakingContract.methods.getMinWithdrawInfo().call();
+        const minVNT = minInfo[0];
+        
         const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
         const vntRewards = rewards[0];
 
         if (vntRewards < minVNT) {
-            showNotification(`Minimum VNT withdrawal not met (${web3.utils.fromWei(minVNT, 'ether')} VNT required)`, "warning");
+            showNotification(`Minimum ${web3.utils.fromWei(minVNT, 'ether')} VNT required`, "warning");
             return;
         }
 
         showNotification("Claiming VNT rewards...", "info");
-        const tx = await stakingContract.methods.claimVNTRewards()
-            .send({ from: accounts[0] });
+        await stakingContract.methods.claimVNTRewards().send({ from: accounts[0] });
         
-        showNotification(`Success! ${web3.utils.fromWei(vntRewards, 'ether')} VNT claimed`, "success");
+        showNotification(`${web3.utils.fromWei(vntRewards, 'ether')} VNT claimed successfully`, "success");
         await updateUI();
     } catch (error) {
         console.error("VNT claim failed:", error);
@@ -687,9 +689,22 @@ async function updateUI() {
         await loadDailyVNTRewards();
 
         if (document.getElementById('claimVNTBtn')) {
-           const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-           document.getElementById('claimVNTBtn').disabled = rewards[0] < minVNT;
-           document.getElementById('claimUSDTBtn').disabled = rewards[1] < minUSDT;
+            try {
+                const [minVNT, minUSDT] = await stakingContract.methods.getMinWithdrawInfo().call();
+                const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+            
+                document.getElementById('claimVNTBtn').disabled = rewards[0] < minVNT;
+                document.getElementById('claimUSDTBtn').disabled = rewards[1] < minUSDT;
+            
+                // स्टेक की गई राशि दिखाने के लिए
+                if (document.getElementById('stakedAmountDisplay')) {
+                    const user = await stakingContract.methods.users(accounts[0]).call();
+                    document.getElementById('stakedAmountDisplay').textContent = 
+                        web3.utils.fromWei(user.totalStaked, 'ether') + ' VNST';
+                }
+            } catch (error) {
+                console.error("Error updating claim buttons:", error);
+            }
         }
         
         // 4. Update referral link
