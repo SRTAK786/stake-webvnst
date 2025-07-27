@@ -362,33 +362,17 @@ async function stakeTokens() {
 }
 
 async function claimRewards() {
-    if (!isConnected) {
-        showNotification("Please connect wallet first", "error");
-        return;
-    }
-
+    if (!isConnected) return alert("Please connect your wallet first");
+    
     try {
-        // गैस लिमिट और प्राइस सेट करें
-        const gasEstimate = await stakingContract.methods.claimAllRewards()
-            .estimateGas({ from: accounts[0] });
-            
-        const result = await stakingContract.methods.claimAllRewards()
-            .send({ 
-                from: accounts[0],
-                gas: Math.floor(gasEstimate * 1.2), // 20% बफर
-                gasPrice: web3.utils.toWei('5', 'gwei') 
-            });
-            
-        showNotification("Rewards claimed successfully!", "success");
+        const result = await stakingContract.methods.claimRewards()
+            .send({ from: accounts[0] });
+        console.log("Rewards claimed:", result);
+        alert("Rewards claimed successfully!");
         await updateUI();
     } catch (error) {
         console.error("Claim failed:", error);
-        showNotification(`Claim failed: ${error.message}`, "error");
-        
-        // Reentrant call एरर के लिए विशेष हैंडलिंग
-        if (error.message.includes('Reentrant call')) {
-            showNotification("Please wait for previous transaction to complete", "warning");
-        }
+        alert("Claim failed: " + error.message);
     }
 }
 
