@@ -663,12 +663,7 @@ async function updateUI() {
                 if (document.getElementById('pendingUsdtRewards')) {
                     document.getElementById('pendingUsdtRewards').textContent = usdtRewards + ' USDT';
                 }
-                
-                // पुराने रिवॉर्ड्स डिस्प्ले को भी अपडेट करें (अगर मौजूद है)
-                if (document.getElementById('yourRewards')) {
-                    document.getElementById('yourRewards').textContent = 
-                        `${vntRewards} VNT + ${usdtRewards} USDT`;
-                }
+        
             } catch (error) {
                 console.error("Error fetching rewards:", error);
                 if (document.getElementById('pendingVntRewards')) {
