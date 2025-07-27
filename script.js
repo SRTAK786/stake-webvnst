@@ -394,40 +394,48 @@ async function claimVNTRewards() {
     }
 }
 
-// केवल USDT रिवॉर्ड्स क्लेम करने के लिए
-async function claimUSDTRewards() {
-    if (!isConnected) {
-        showNotification("Please connect wallet first", "error");
-        return;
-    }
+async function loadDailyUSDTRewards() {
+  if (!isConnected || !accounts[0]) return;
+  
+  const usdtRewardsDisplay = document.getElementById('dailyUsdtRewardsDisplay');
+  if (!usdtRewardsDisplay) return;
+
+  try {
+    const [user, roiPercents, minInfo] = await Promise.all([
+      stakingContract.methods.users(accounts[0]).call(),
+      stakingContract.methods.roiOfRoiPercents().call(),
+      stakingContract.methods.getMinWithdrawInfo().call()
+    ]);
     
-    try {
-        const [, minUSDT] = await stakingContract.methods.getMinWithdrawInfo().call();
-        const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-        const usdtRewards = rewards[1];
-
-        if (usdtRewards < minUSDT) {
-            showNotification(`Minimum USDT withdrawal not met (${web3.utils.fromWei(minUSDT, 'ether')} USDT required)`, "warning");
-            return;
-        }
-
-        // यूजर के पास रेफरल है या नहीं चेक करें
-        const user = await stakingContract.methods.users(accounts[0]).call();
-        if (user.referralCount === 0) {
-            showNotification("No referral team, no USDT rewards", "warning");
-            return;
-        }
-
-        showNotification("Claiming USDT rewards...", "info");
-        const tx = await stakingContract.methods.claimUSDTRewards()
-            .send({ from: accounts[0] });
-        
-        showNotification(`Success! ${web3.utils.fromWei(usdtRewards, 'ether')} USDT claimed`, "success");
-        await updateUI();
-    } catch (error) {
-        console.error("USDT claim failed:", error);
-        showNotification(`USDT claim failed: ${error.message}`, "error");
+    const minUSDT = minInfo[1];
+    let pendingUSDT = 0;
+    let dailyEstimate = 0;
+    
+    for (let i = 0; i < 5; i++) {
+      if (user.levelDeposits[i] > 0) {
+        const vntValue = web3.utils.fromWei(user.levelDeposits[i], 'ether') * 2 * 0.08;
+        pendingUSDT += (vntValue * roiPercents[i]) / 100;
+        dailyEstimate += (vntValue * roiPercents[i]) / 100 / 365;
+      }
     }
+
+    usdtRewardsDisplay.innerHTML = `
+      <div class="reward-item">
+        <span>Pending USDT:</span>
+        <span>${pendingUSDT.toFixed(6)} USDT</span>
+      </div>
+      <div class="reward-item">
+        <span>Daily Estimate:</span>
+        <span>${dailyEstimate.toFixed(6)} USDT/day</span>
+      </div>
+      ${pendingUSDT < minUSDT ? 
+        `<small>Minimum ${web3.utils.fromWei(minUSDT, 'ether')} USDT required</small>` :
+        '<small>Ready to claim</small>'}
+    `;
+  } catch (error) {
+    console.error("USDT rewards error:", error);
+    usdtRewardsDisplay.innerHTML = '<p class="error">Error loading USDT rewards</p>';
+  }
 }
 
 // 1. बैच क्लेम फंक्शन
