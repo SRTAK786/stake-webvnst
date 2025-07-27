@@ -362,30 +362,33 @@ async function stakeTokens() {
 }
 
 async function claimRewards() {
-    if (!isConnected) return alert("Please connect wallet");
-    
+    if (!isConnected) {
+        showNotification("Please connect wallet first", "error");
+        return;
+    }
+
     try {
-        // पहले मिनिमम वैल्यू चेक करें
-        const [minVNT, minUSDT] = await Promise.all([
-            stakingContract.methods.minVNTWithdraw().call(),
-            stakingContract.methods.minUSDTWithdraw().call()
-        ]);
-        
-        // फिर रिवॉर्ड्स चेक करें
-        const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-        
-        if (rewards[0] < minVNT && rewards[1] < minUSDT) {
-            return alert(`Rewards less than minimum (${minVNT} VNT / ${minUSDT} USDT)`);
-        }
-        
-        // अब क्लेम करें
-        await stakingContract.methods.claimAllRewards().send({ from: accounts[0] });
-        alert("Success!");
-        updateUI();
-        await displayAllRewards();
+        // गैस लिमिट और प्राइस सेट करें
+        const gasEstimate = await stakingContract.methods.claimAllRewards()
+            .estimateGas({ from: accounts[0] });
+            
+        const result = await stakingContract.methods.claimAllRewards()
+            .send({ 
+                from: accounts[0],
+                gas: Math.floor(gasEstimate * 1.2), // 20% बफर
+                gasPrice: web3.utils.toWei('5', 'gwei') 
+            });
+            
+        showNotification("Rewards claimed successfully!", "success");
+        await updateUI();
     } catch (error) {
         console.error("Claim failed:", error);
-        alert("Error: " + error.message);
+        showNotification(`Claim failed: ${error.message}`, "error");
+        
+        // Reentrant call एरर के लिए विशेष हैंडलिंग
+        if (error.message.includes('Reentrant call')) {
+            showNotification("Please wait for previous transaction to complete", "warning");
+        }
     }
 }
 
