@@ -395,46 +395,43 @@ async function claimVNTRewards() {
 }
 
 async function loadDailyUSDTRewards() {
-  if (!isConnected || !accounts[0]) return;
-  
-  const usdtRewardsDisplay = document.getElementById('dailyUsdtRewardsDisplay');
-  if (!usdtRewardsDisplay) return;
-
   try {
-    const [user, roiPercents, minInfo] = await Promise.all([
-      stakingContract.methods.users(accounts[0]).call(),
-      stakingContract.methods.roiOfRoiPercents().call(),
-      stakingContract.methods.getMinWithdrawInfo().call()
-    ]);
+    // सही तरीके से roiOfRoiPercents array प्राप्त करें
+    const roiPercents = await stakingContract.methods.roiOfRoiPercents().call();
     
-    const minUSDT = minInfo[1];
+    // यूजर डेटा प्राप्त करें
+    const user = await stakingContract.methods.users(accounts[0]).call();
+    
     let pendingUSDT = 0;
     let dailyEstimate = 0;
     
+    // सभी 5 लेवल्स के लिए लूप चलाएं
     for (let i = 0; i < 5; i++) {
       if (user.levelDeposits[i] > 0) {
-        const vntValue = web3.utils.fromWei(user.levelDeposits[i], 'ether') * 2 * 0.08;
+        // VNT वैल्यू कैलकुलेट करें (2X रिवॉर्ड के रूप में)
+        const vntReward = web3.utils.fromWei(user.levelDeposits[i], 'ether') * 2;
+        // USDT वैल्यू (0.08 USDT प्रति VNT के हिसाब से)
+        const vntValue = vntReward * 0.08;
+        // ROI of ROI कैलकुलेट करें
         pendingUSDT += (vntValue * roiPercents[i]) / 100;
         dailyEstimate += (vntValue * roiPercents[i]) / 100 / 365;
       }
     }
 
-    usdtRewardsDisplay.innerHTML = `
+    // UI अपडेट करें
+    document.getElementById('usdtRewardsDisplay').innerHTML = `
       <div class="reward-item">
-        <span>Pending USDT:</span>
+        <span>Pending USDT:</span> 
         <span>${pendingUSDT.toFixed(6)} USDT</span>
       </div>
       <div class="reward-item">
         <span>Daily Estimate:</span>
         <span>${dailyEstimate.toFixed(6)} USDT/day</span>
       </div>
-      ${pendingUSDT < minUSDT ? 
-        `<small>Minimum ${web3.utils.fromWei(minUSDT, 'ether')} USDT required</small>` :
-        '<small>Ready to claim</small>'}
     `;
   } catch (error) {
     console.error("USDT rewards error:", error);
-    usdtRewardsDisplay.innerHTML = '<p class="error">Error loading USDT rewards</p>';
+    showNotification("Error loading USDT rewards", "error");
   }
 }
 
