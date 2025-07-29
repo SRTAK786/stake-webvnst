@@ -394,6 +394,51 @@ async function claimVNTRewards() {
     }
 }
 
+async function claimUSDTRewards() {
+  if (!isConnected) {
+    showNotification("Please connect wallet first", "error");
+    return;
+  }
+
+  try {
+    // 1. Check if user has referrals
+    const user = await stakingContract.methods.users(accounts[0]).call();
+    if (user.referralCount === 0) {
+      showNotification("You need referrals to claim USDT rewards", "warning");
+      return;
+    }
+
+    // 2. Check pending USDT rewards
+    const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+    const pendingUSDT = rewards[1]; // USDT rewards are at index 1
+
+    // 3. Check minimum withdrawal limit
+    const minUSDT = await stakingContract.methods.minUSDTWithdraw().call();
+    if (Number(pendingUSDT) < Number(minUSDT)) {
+      showNotification(
+        `Minimum ${web3.utils.fromWei(minUSDT, 'ether')} USDT required to claim`,
+        "warning"
+      );
+      return;
+    }
+
+    // 4. Execute claim
+    showNotification("Claiming USDT rewards...", "info");
+    await stakingContract.methods.claimUSDTRewards().send({ from: accounts[0] });
+    
+    showNotification(
+      `${web3.utils.fromWei(pendingUSDT, 'ether')} USDT claimed successfully!`,
+      "success"
+    );
+    
+    // 5. Update UI
+    await updateUI();
+  } catch (error) {
+    console.error("USDT Claim Error:", error);
+    showNotification(`USDT Claim Failed: ${error.message}`, "error");
+  }
+}
+
 async function loadDailyUSDTRewards() {
   try {
     // सही तरीके से roiOfRoiPercents array प्राप्त करें
