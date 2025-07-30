@@ -442,7 +442,7 @@ async function claimUSDTRewards() {
 async function loadDailyUSDTRewards() {
   try {
     // सही तरीके से roiOfRoiPercents array प्राप्त करें
-    const roiPercents = await stakingContract.methods.roiOfRoiPercents().call();
+    const roiPercents = await stakingContract.methods.roiOfRoiPercents.call();
     
     // यूजर डेटा प्राप्त करें
     const user = await stakingContract.methods.users(accounts[0]).call();
