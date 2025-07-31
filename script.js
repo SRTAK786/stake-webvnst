@@ -759,24 +759,6 @@ async function updateUI() {
             }
         }
 
-        if (document.getElementById('roiRewardsBreakdown')) {
-            try {
-                const userInfo = await stakingContract.methods.users(accounts[0]).call();
-                const roiPercents = await stakingContract.methods.roiOfRoiPercents().call();
-        
-                let roiHtml = '';
-                for (let i = 0; i < 5; i++) {
-                    if (userInfo.levelDeposits[i] > 0) {
-                        const dailyReward = (userInfo.levelDeposits[i] * 2 * 0.08 * roiPercents[i]) / (100 * 365);
-                        roiHtml += `<div>Level ${i+1}: ${dailyReward.toFixed(6)} USDT/day</div>`;
-                    }
-                }
-                document.getElementById('roiRewardsBreakdown').innerHTML = roiHtml;
-            } catch (error) {
-                console.error("Error loading ROI breakdown:", error);
-            }
-        }
-
         if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
             await updateHomeStats();
         }
