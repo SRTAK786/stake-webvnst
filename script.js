@@ -584,91 +584,48 @@ async function loadDailyUSDTRewards() {
   }
 }
 
+// नया displayAllRewards() फंक्शन
 async function displayAllRewards() {
-  if (!isConnected || !accounts[0]) return;
-
-  try {
-    // Get all required data in one call
-    const [user, directRewardPercents, roiOfRoiPercents, rewards] = await Promise.all([
-      stakingContract.methods.users(accounts[0]).call(),
-      stakingContract.methods.directRewardPercents.call(), // Fixed call
-      stakingContract.methods.roiOfRoiPercents.call(),     // Fixed call
-      stakingContract.methods.getPendingRewards(accounts[0]).call()
-    ]);
-
-    const levelDeposits = user.levelDeposits || [];
-
-    // 1. Auto-Staked VNST (Level 1 Only)
-    const level1Deposit = levelDeposits[0] || 0;
-    const autoStakeVNST = (level1Deposit * directRewardPercents[0]) / 100;
-    document.getElementById('autoStakeDisplay').innerHTML = `
-      <div class="reward-item">
-        <span>From Level 1:</span>
-        <span>${web3.utils.fromWei(autoStakeVNST.toString(), 'ether')} VNST (${directRewardPercents[0]}%)</span>
-      </div>
-      <small>Automatically staked from your direct referrals</small>
-    `;
-
-    // 2. Direct USDT Rewards (Level 2-5)
-    let directUsdtHtml = '';
-    let totalDirectUSDT = 0;
+    const userRewardInfo = await stakingContract.methods.userRewardInfo(accounts[0]).call();
+    const user = await stakingContract.methods.users(accounts[0]).call();
+    const directPercents = await stakingContract.methods.directRewardPercents().call();
+    const roiPercents = await stakingContract.methods.roiOfRoiPercents().call();
     
-    for (let level = 1; level < 5; level++) {
-      const levelDeposit = levelDeposits[level] || 0;
-      if (levelDeposit > 0) {
-        const vnstValue = web3.utils.fromWei(levelDeposit, 'ether');
-        const reward = (vnstValue * directRewardPercents[level]) / 100;
-        totalDirectUSDT += reward;
-        directUsdtHtml += `
-          <div class="reward-item">
-            <span>Level ${level+1}:</span>
-            <span>${reward.toFixed(4)} USDT (${directRewardPercents[level]}%)</span>
-          </div>
-        `;
-      }
+    // डायरेक्ट रिवॉर्ड
+    let directHtml = '';
+    for (let i = 0; i < 5; i++) {
+        if (user.levelDeposits[i] > 0) {
+            const reward = (user.levelDeposits[i] * 0.1 * directPercents[i]) / 100;
+            directHtml += `<div>Level ${i+1}: ${reward.toFixed(4)} USDT</div>`;
+        }
     }
-
-    document.getElementById('directUsdtDisplay').innerHTML = `
-      ${directUsdtHtml}
-      <div class="reward-total">
-        <span>Total Direct USDT:</span>
-        <span>${totalDirectUSDT.toFixed(4)} USDT</span>
-      </div>
-    `;
-
-    // 3. ROI of ROI USDT (All Levels)
-    let roiOfRoiHtml = '';
-    let totalRoiOfRoiUSDT = 0;
-
-    for (let level = 0; level < 5; level++) {
-      const levelDeposit = levelDeposits[level] || 0;
-      if (levelDeposit > 0) {
-        const vntReward = web3.utils.fromWei(levelDeposit, 'ether') * 2; // 2X VNT reward
-        const reward = (vntReward * roiOfRoiPercents[level]) / 100;
-        totalRoiOfRoiUSDT += reward;
-        roiOfRoiHtml += `
-          <div class="reward-item">
-            <span>Level ${level+1}:</span>
-            <span>${reward.toFixed(4)} USDT (${roiOfRoiPercents[level]}%)</span>
-          </div>
-        `;
-      }
+    
+    // ROI of ROI रिवॉर्ड
+    let roiHtml = '';
+    const currentDay = Math.floor(Date.now() / 1000 / 86400);
+    const daysPassed = currentDay - userRewardInfo.lastUsdtClaimDay;
+    
+    for (let i = 0; i < 5; i++) {
+        if (user.levelDeposits[i] > 0) {
+            const annualReward = (user.levelDeposits[i] * 2 * 0.08 * roiPercents[i]) / 100;
+            const pendingReward = (annualReward * daysPassed) / 365;
+            roiHtml += `<div>Level ${i+1}: ${pendingReward.toFixed(6)} USDT</div>`;
+        }
     }
-
-    document.getElementById('roiOfRoiDisplay').innerHTML = `
-      ${roiOfRoiHtml}
-      <div class="reward-total">
-        <span>Total ROI of ROI:</span>
-        <span>${totalRoiOfRoiUSDT.toFixed(4)} USDT</span>
-      </div>
-      <small>Based on 2X VNT value of team stake</small>
+    
+    // UI में दिखाएं
+    document.getElementById('rewardsContainer').innerHTML = `
+        <h3>रिवॉर्ड डिटेल</h3>
+        <div class="reward-section">
+            <h4>डायरेक्ट रिवॉर्ड</h4>
+            ${directHtml}
+        </div>
+        <div class="reward-section">
+            <h4>ROI of ROI रिवॉर्ड</h4>
+            ${roiHtml}
+            <small>365 दिन में बंटेगा</small>
+        </div>
     `;
-
-  } catch (error) {
-    console.error("Error displaying rewards:", error);
-    // Show error to user
-    showNotification("Error loading rewards data", "error");
-  }
 }
 
 async function showWithdrawHistory() {
@@ -765,6 +722,24 @@ async function updateUI() {
                 if (document.getElementById('yourRewards')) {
                     document.getElementById('yourRewards').textContent = "0 VNT + 0 USDT";
                 }
+            }
+        }
+
+        if (document.getElementById('roiRewardsBreakdown')) {
+            try {
+                const userInfo = await stakingContract.methods.users(accounts[0]).call();
+                const roiPercents = await stakingContract.methods.roiOfRoiPercents().call();
+        
+                let roiHtml = '';
+                for (let i = 0; i < 5; i++) {
+                    if (userInfo.levelDeposits[i] > 0) {
+                        const dailyReward = (userInfo.levelDeposits[i] * 2 * 0.08 * roiPercents[i]) / (100 * 365);
+                        roiHtml += `<div>Level ${i+1}: ${dailyReward.toFixed(6)} USDT/day</div>`;
+                    }
+                }
+                document.getElementById('roiRewardsBreakdown').innerHTML = roiHtml;
+            } catch (error) {
+                console.error("Error loading ROI breakdown:", error);
             }
         }
 
