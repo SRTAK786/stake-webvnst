@@ -584,48 +584,82 @@ async function loadDailyUSDTRewards() {
   }
 }
 
-// नया displayAllRewards() फंक्शन
 async function displayAllRewards() {
-    const userRewardInfo = await stakingContract.methods.userRewardInfo(accounts[0]).call();
-    const user = await stakingContract.methods.users(accounts[0]).call();
-    const directPercents = await stakingContract.methods.directRewardPercents().call();
-    const roiPercents = await stakingContract.methods.roiOfRoiPercents().call();
-    
-    // डायरेक्ट रिवॉर्ड
-    let directHtml = '';
-    for (let i = 0; i < 5; i++) {
-        if (user.levelDeposits[i] > 0) {
-            const reward = (user.levelDeposits[i] * 0.1 * directPercents[i]) / 100;
-            directHtml += `<div>Level ${i+1}: ${reward.toFixed(4)} USDT</div>`;
-        }
-    }
-    
-    // ROI of ROI रिवॉर्ड
-    let roiHtml = '';
-    const currentDay = Math.floor(Date.now() / 1000 / 86400);
-    const daysPassed = currentDay - userRewardInfo.lastUsdtClaimDay;
-    
-    for (let i = 0; i < 5; i++) {
-        if (user.levelDeposits[i] > 0) {
-            const annualReward = (user.levelDeposits[i] * 2 * 0.08 * roiPercents[i]) / 100;
-            const pendingReward = (annualReward * daysPassed) / 365;
-            roiHtml += `<div>Level ${i+1}: ${pendingReward.toFixed(6)} USDT</div>`;
-        }
-    }
-    
-    // UI में दिखाएं
-    document.getElementById('rewardsContainer').innerHTML = `
-        <h3>रिवॉर्ड डिटेल</h3>
-        <div class="reward-section">
-            <h4>डायरेक्ट रिवॉर्ड</h4>
-            ${directHtml}
+  if (!isConnected || !accounts[0]) return;
+
+  const user = await stakingContract.methods.users(accounts[0]).call();
+  const levelDeposits = user.levelDeposits || [];
+  const vnstPrice = await stakingContract.methods.vnstPrice().call() / 1e18;
+  const vntPrice = await stakingContract.methods.vntPrice().call() / 1e18;
+
+  // 1. Auto-Staked VNST (Level 1 Only)
+  const level1Deposit = user.levelDeposits[0] || 0;
+  const autoStakeVNST = (level1Deposit * 5) / 100;
+  document.getElementById('autoStakeDisplay').innerHTML = `
+    <div class="reward-item">
+      <span>From Level 1:</span>
+      <span>${web3.utils.fromWei(autoStakeVNST.toString(), 'ether')} VNST (5%)</span>
+    </div>
+    <small>Automatically staked from your direct referrals</small>
+  `;
+
+  // 2. Direct USDT Rewards (Level 2-5)
+  let directUsdtHtml = '';
+  let totalDirectUSDT = 0;
+  const directPercents = [5, 3, 2, 1, 1]; // Level 0-5 (Level 1 is VNST)
+
+  for (let level = 2; level <= 5; level++) {
+    const levelDeposit = user.levelDeposits[level-1] || 0;
+    if (levelDeposit > 0) {
+      const usdtValue = (levelDeposit * vnstPrice) / 1e18;
+      const reward = (usdtValue * directPercents[level]) / 100;
+      totalDirectUSDT += reward;
+      directUsdtHtml += `
+        <div class="reward-item">
+          <span>Level ${level}:</span>
+          <span>${reward.toFixed(4)} USDT (${directPercents[level]}%)</span>
         </div>
-        <div class="reward-section">
-            <h4>ROI of ROI रिवॉर्ड</h4>
-            ${roiHtml}
-            <small>365 दिन में बंटेगा</small>
+      `;
+    }
+  }
+
+  document.getElementById('directUsdtDisplay').innerHTML = `
+    ${directUsdtHtml}
+    <div class="reward-total">
+      <span>Total Direct USDT:</span>
+      <span>${totalDirectUSDT.toFixed(4)} USDT</span>
+    </div>
+  `;
+
+  // 3. ROI of ROI USDT (All Levels)
+  let roiOfRoiHtml = '';
+  let totalRoiOfRoiUSDT = 0;
+  const roiPercents = [2, 2, 2, 2, 2]; // Level 1-5
+
+  for (let level = 0; level < 5; level++) {
+    const levelDeposit = user.levelDeposits[level] || 0;
+    if (levelDeposit > 0) {
+      const vntReward = levelDeposit * 2;
+      const usdtValue = (vntReward * vntPrice) / 1e18;
+      const reward = (usdtValue * roiPercents[level]) / 100;
+      totalRoiOfRoiUSDT += reward;
+      roiOfRoiHtml += `
+        <div class="reward-item">
+          <span>Level ${level+1}:</span>
+          <span>${reward.toFixed(4)} USDT (2%)</span>
         </div>
-    `;
+      `;
+    }
+  }
+
+  document.getElementById('roiOfRoiDisplay').innerHTML = `
+    ${roiOfRoiHtml}
+    <div class="reward-total">
+      <span>Total ROI of ROI:</span>
+      <span>${totalRoiOfRoiUSDT.toFixed(4)} USDT</span>
+    </div>
+    <small>Based on 2X VNT value of team stake</small>
+  `;
 }
 
 async function showWithdrawHistory() {
