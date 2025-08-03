@@ -106,8 +106,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (window.location.pathname.includes('stake.html')) {
       setupStakingPage();
     }
-
-    animateCardsOnScroll();
 });
 
 // Initialize contracts
@@ -663,7 +661,3 @@ async function getStakeDetails(stakeIndex) {
     return null;
   }
 }
-
-
-    cards.forEach(card => observer.observe(card));
-
