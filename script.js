@@ -666,4 +666,4 @@ async function getStakeDetails(stakeIndex) {
 
 
     cards.forEach(card => observer.observe(card));
-}
+
