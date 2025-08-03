@@ -499,11 +499,11 @@ async function updateUI() {
 
         if (document.getElementById('claimVNTBtn')) {
             try {
-                const [minVNT, minUSDT] = await stakingContract.methods.getMinWithdrawInfo().call();
+                const withdrawInfo = await stakingContract.methods.getMinWithdrawInfo().call();
+                const minVNT = withdrawInfo[0];
                 const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
             
                 document.getElementById('claimVNTBtn').disabled = rewards[0] < minVNT;
-                document.getElementById('claimUSDTBtn').disabled = rewards[1] < minUSDT;
             
                 // स्टेक की गई राशि दिखाने के लिए
                 if (document.getElementById('stakedAmountDisplay')) {
