@@ -569,7 +569,7 @@ async function updateUI() {
                                 </div>
                             </div>
                 `       ;
-                    });
+                    };
             
                     stakesList.appendChild(summaryCard);
                     stakesList.appendChild(detailsCard);
