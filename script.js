@@ -553,11 +553,20 @@ async function updateUI() {
                     const detailsCard = document.createElement('div');
                     detailsCard.className = 'stake-details';
             
-                    activeStakes.forEach((stake, index) => {
+                   for (const [index, stake] of activeStakes.entries()) {
+                        const stakeDays = await stakingContract.methods.getStakeDays(accounts[0], index).call();
+                        const startDate = new Date(stake.startDay * 86400 * 1000).toLocaleDateString();
+                        const daysRemaining = Math.max(0, 365 - stakeDays);
+
                         detailsCard.innerHTML += `
                             <div class="stake-item">
                                 <p><strong>Stake #${index+1}:</strong> ${web3.utils.fromWei(stake.amount, 'ether')} VNST</p>
-                                <p>Days staked: ${stake.daysStaked || 0}/365</p>
+                                <p><strong>Start Date:</strong> ${startDate}</p>
+                                <p><strong>Days Staked:</strong> ${stakeDays}/365</p>
+                                <p><strong>Days Remaining:</strong> ${daysRemaining}</p>
+                                <div class="progress-bar">
+                                    <div style="width: ${(stakeDays / 365) * 100}%"></div>
+                                </div>
                             </div>
                 `       ;
                     });
