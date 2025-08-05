@@ -329,7 +329,6 @@ async function stakeTokens() {
         console.log("Staking successful:", result);
         alert("Staking successful!");
         await updateUI();
-        await displayAllRewards();
     } catch (error) {
         console.error("Staking failed:", error);
         alert("Staking failed: " + error.message);
