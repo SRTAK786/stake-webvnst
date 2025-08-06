@@ -12,6 +12,7 @@ const metamaskBtn = document.getElementById('metamaskBtn');
 const walletConnectBtn = document.getElementById('walletConnectBtn');
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const navMenu = document.getElementById('navMenu');
+const navLinks = document.querySelectorAll('.nav-link');
 
 // Global Variables
 let web3;
@@ -194,16 +195,29 @@ function toggleWalletModal() {
 }
 
 function toggleMobileMenu() {
+    // Toggle menu visibility
     navMenu.classList.toggle('show');
+    
+    // Toggle button active state
     mobileMenuBtn.classList.toggle('active');
+    
+    // Toggle body scroll
+    document.body.style.overflow = navMenu.classList.contains('show') ? 'hidden' : '';
 }
 
-document.querySelectorAll('.nav-link').forEach(link => {
+// Close menu when clicking on nav links
+navLinks.forEach(link => {
     link.addEventListener('click', () => {
         navMenu.classList.remove('show');
         mobileMenuBtn.classList.remove('active');
+        document.body.style.overflow = '';
     });
 });
+
+// Initialize mobile menu button
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+}
 
 async function connectMetaMask() {
     try {
