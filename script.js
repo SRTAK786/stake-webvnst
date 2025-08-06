@@ -195,7 +195,15 @@ function toggleWalletModal() {
 
 function toggleMobileMenu() {
     navMenu.classList.toggle('show');
+    mobileMenuBtn.classList.toggle('active');
 }
+
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+        navMenu.classList.remove('show');
+        mobileMenuBtn.classList.remove('active');
+    });
+});
 
 async function connectMetaMask() {
     try {
