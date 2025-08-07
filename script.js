@@ -471,27 +471,22 @@ async function updateUI() {
         if (!isConnected || !accounts[0]) return;
     
         try {
-        // नया तरीका - सीधे getPendingRewards को call करें
             const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-        
-            // Mainnet पर response format अलग हो सकता है
             let vntRewards = '0';
-            if (typeof rewards === 'string') {
-                vntRewards = web3.utils.fromWei(rewards, 'ether');
-            } else if (Array.isArray(rewards)) {
-                vntRewards = web3.utils.fromWei(rewards[0], 'ether');
+            
+            // Mainnet और Testnet के लिए अलग-अलग हैंडलिंग
+            if (Array.isArray(rewards)) {
+                vntRewards = web3.utils.fromWei(rewards[0].toString(), 'ether');
+            } else {
+                vntRewards = web3.utils.fromWei(rewards.toString(), 'ether');
             }
-        
-            // UI Update करें
-            if (document.getElementById('pendingVntRewards')) {
-                document.getElementById('pendingVntRewards').textContent = 
-                    parseFloat(vntRewards).toFixed(4) + ' VNT';
-            }
+            
+            document.getElementById('pendingVntRewards').textContent = 
+                parseFloat(vntRewards).toFixed(4) + ' VNT';
         } catch (error) {
-            console.error("Pending rewards error:", error);
-            showNotification("रिवॉर्ड्स लोड करने में त्रुटि", "error");
+            console.error("Rewards fetch error:", error);
+            document.getElementById('pendingVntRewards').textContent = 'Error';
         }
-        
             } catch (error) {
                 console.error("Error fetching rewards:", error);
                 if (document.getElementById('pendingVntRewards')) {
@@ -518,6 +513,13 @@ async function updateUI() {
                 const withdrawInfo = await stakingContract.methods.getMinWithdrawInfo().call();
                 const minVNT = withdrawInfo[0];
                 const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+                let vntRewards = '0';
+                if (Array.isArray(rewards)) {
+                    vntRewards = web3.utils.fromWei(rewards[0], 'ether');
+                } else {
+                    vntRewards = web3.utils.fromWei(rewards.toString(), 'ether');
+                }
+                
             
                 document.getElementById('claimVNTBtn').disabled = rewards[0] < minVNT;
             
