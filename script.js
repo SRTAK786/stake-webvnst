@@ -1,63 +1,3 @@
-const deviceStorageKey = 'vnst_device_id';
-let currentDeviceId = '';
-
-// डिवाइस आईडी जनरेट करें
-async function generateDeviceId() {
-  try {
-    const fingerprint = [
-      navigator.userAgent,
-      navigator.hardwareConcurrency,
-      screen.width,
-      screen.height,
-      navigator.language,
-      new Date().getTimezoneOffset(),
-      localStorage.getItem('device_fingerprint') || ''
-    ].join('|');
-
-    const hashBuffer = await crypto.subtle.digest('SHA-256', 
-      new TextEncoder().encode(fingerprint));
-    return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch (e) {
-    console.error("Device ID generation failed:", e);
-    return Math.random().toString(36).substring(2) + 
-      Date.now().toString(36);
-  }
-}
-
-// डिवाइस वैलिडेशन
-async function validateDevice(userAddress) {
-  try {
-    // Hostinger PHP API endpoint
-    const response = await fetch('api/validateDevice.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userAddress: userAddress.toLowerCase(),
-        deviceId: currentDeviceId
-      })
-    });
-    
-    const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.message || "Device validation failed");
-    }
-    return true;
-  } catch (error) {
-    console.error("Validation error:", error);
-    throw error;
-  }
-}
-
-// डिवाइस आईडी इनिशियलाइज़ करें
-(async function initDevice() {
-  currentDeviceId = localStorage.getItem(deviceStorageKey);
-  if (!currentDeviceId) {
-    currentDeviceId = await generateDeviceId();
-    localStorage.setItem(deviceStorageKey, currentDeviceId);
-  }
-})();
-
 // Contract ABIs and Addresses (REPLACE THESE WITH YOUR ACTUAL VALUES)
 const vnstTokenABI = [{"inputs":[{"internalType":"address","name":"_usdtAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"by","type":"address"}],"name":"AddressBlacklisted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"by","type":"address"}],"name":"AddressWhitelisted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"FeeCollected","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"role","type":"bytes32"},{"indexed":true,"internalType":"address","name":"account","type":"address"},{"indexed":true,"internalType":"address","name":"sender","type":"address"}],"name":"RoleRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldFee","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newFee","type":"uint256"},{"indexed":true,"internalType":"address","name":"by","type":"address"}],"name":"TransferFeeChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newPrice","type":"uint256"}],"name":"VNSTPriceUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"uint256","name":"vnstAmount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"usdtAmount","type":"uint256"}],"name":"VNSTPurchased","type":"event"},{"stateMutability":"payable","type":"fallback"},{"inputs":[],"name":"ADMIN_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"BLACKLIST_MANAGER_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"FEE_MANAGER_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PAUSER_ROLE","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"blacklist","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"vnstAmount","type":"uint256"}],"name":"buyVNST","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"vnstAmount","type":"uint256"}],"name":"getUSDTRequiredForVNST","outputs":[{"internalType":"uint256","name":"usdtRequired","type":"uint256"},{"internalType":"uint256","name":"usdtAllowance","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"grantRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"hasRole","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isBlacklisted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"isPaused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"role","type":"bytes32"},{"internalType":"address","name":"account","type":"address"}],"name":"revokeRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"","type":"bytes32"},{"internalType":"address","name":"","type":"address"}],"name":"roles","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"newFee","type":"uint256"}],"name":"setTransferFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newPrice","type":"uint256"}],"name":"setVNSTPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"transferFeePercent","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"usdtTokenAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"vnstPriceInUSDT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"whitelist","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"to","type":"address"}],"name":"withdrawUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}];
 const vnstTokenAddress = "0xF9Bbb00436B384b57A52D1DfeA8Ca43fC7F11527"; // PASTE YOUR VNST TOKEN ADDRESS
@@ -72,7 +12,6 @@ const metamaskBtn = document.getElementById('metamaskBtn');
 const walletConnectBtn = document.getElementById('walletConnectBtn');
 const mobileMenuBtn = document.getElementById('mobileMenuBtn');
 const navMenu = document.getElementById('navMenu');
-const navLinks = document.querySelectorAll('.nav-link');
 
 // Global Variables
 let web3;
@@ -134,6 +73,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: '0x38' }] // BSC Mainnet
           });
+          window.location.reload();
           document.getElementById('networkIndicator').textContent = 'Mainnet';
         } catch (error) {
           console.error("Network switch failed:", error);
@@ -255,47 +195,13 @@ function toggleWalletModal() {
 }
 
 function toggleMobileMenu() {
-    // Toggle menu visibility
     navMenu.classList.toggle('show');
-    
-    // Toggle button active state
-    mobileMenuBtn.classList.toggle('active');
-    
-    // Toggle body scroll
-    document.body.style.overflow = navMenu.classList.contains('show') ? 'hidden' : '';
-}
-
-// Close menu when clicking on nav links
-navLinks.forEach(link => {
-    link.addEventListener('click', () => {
-        navMenu.classList.remove('show');
-        mobileMenuBtn.classList.remove('active');
-        document.body.style.overflow = '';
-    });
-});
-
-// Initialize mobile menu button
-if (mobileMenuBtn) {
-    mobileMenuBtn.addEventListener('click', toggleMobileMenu);
 }
 
 async function connectMetaMask() {
     try {
         accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         console.log("Connected account:", accounts[0]);
-
-        try {
-          await validateDevice(accounts[0]);
-        } catch (error) {
-          // वैलिडेशन फेल होने पर
-          await window.ethereum.request({
-            method: 'wallet_revokePermissions',
-            params: [{ eth_accounts: {} }]
-          });
-          accounts = [];
-          alert(`🚫 एक डिवाइस पर सिर्फ एक अकाउंट:\n\n${error.message}`);
-          return;
-        }
         
         isConnected = true;
         updateWalletButton();
@@ -320,7 +226,6 @@ async function connectWalletConnect() {
         const provider = new WalletConnectProvider.default({
             rpc: {
                 56: "https://bsc-dataseed.binance.org/", // BSC Mainnet
-                97: "https://data-seed-prebsc-1-s1.binance.org:8545/" // BSC Testnet
             },
             chainId: 56, // Default to BSC Mainnet
             bridge: "https://bridge.walletconnect.org"
@@ -357,6 +262,15 @@ async function connectWalletConnect() {
         console.error("WalletConnect connection failed:", error);
         showNotification(`Connection failed: ${error.message}`, 'error');
     }
+}
+
+async function checkNetwork() {
+    const chainId = await web3.eth.getChainId();
+    if (chainId !== 56) { // 56 = BSC Mainnet
+        showNotification("कृपया BSC Mainnet पर स्विच करें", "warning");
+        return false;
+    }
+    return true;
 }
 
 function handleDisconnect() {
@@ -554,21 +468,29 @@ async function updateUI() {
             }
         }
         
-        // 3. पेंडिंग रिवॉर्ड्स अपडेट करें
-        if (document.getElementById('pendingVntRewards') || document.getElementById('pendingUsdtRewards')) {
-            try {
-                const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-                console.log("Raw rewards data:", rewards);
-                
-                let vntRewards = '0';
-                if (Array.isArray(rewards)) {
-                    vntRewards = web3.utils.fromWei(rewards[0] || '0', 'ether');
-                }
-                
-                // नए रिवॉर्ड्स डिस्प्ले को अपडेट करें
-                if (document.getElementById('pendingVntRewards')) {
-                    document.getElementById('pendingVntRewards').textContent = vntRewards + ' VNT';
-                }
+        if (!isConnected || !accounts[0]) return;
+    
+        try {
+        // नया तरीका - सीधे getPendingRewards को call करें
+            const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+        
+            // Mainnet पर response format अलग हो सकता है
+            let vntRewards = '0';
+            if (typeof rewards === 'string') {
+                vntRewards = web3.utils.fromWei(rewards, 'ether');
+            } else if (Array.isArray(rewards)) {
+                vntRewards = web3.utils.fromWei(rewards[0], 'ether');
+            }
+        
+            // UI Update करें
+            if (document.getElementById('pendingVntRewards')) {
+                document.getElementById('pendingVntRewards').textContent = 
+                    parseFloat(vntRewards).toFixed(4) + ' VNT';
+            }
+        } catch (error) {
+            console.error("Pending rewards error:", error);
+            showNotification("रिवॉर्ड्स लोड करने में त्रुटि", "error");
+        }
         
             } catch (error) {
                 console.error("Error fetching rewards:", error);
@@ -587,6 +509,8 @@ async function updateUI() {
         }
 
         await updateContractStats();
+        
+        await updatePendingRewards();
         
         await loadDailyVNTRewards();
         
@@ -763,4 +687,19 @@ async function getStakeDetails(stakeIndex) {
     console.error("Error getting stake details:", error);
     return null;
   }
+}
+
+async function updatePendingRewardsUI() {
+    try {
+        // सिंगल वैल्यू रिटर्न होने की स्थिति में
+        const vntRewardsWei = await stakingContract.methods.getPendingRewards(accounts[0]).call();
+        const vntRewards = web3.utils.fromWei(vntRewardsWei.toString(), 'ether');
+        
+        document.getElementById('pendingVntRewards').textContent = 
+            parseFloat(vntRewards).toFixed(4) + ' VNT';
+            
+    } catch (error) {
+        console.error("Error fetching pending rewards:", error);
+        document.getElementById('pendingVntRewards').textContent = 'Error';
+    }
 }
