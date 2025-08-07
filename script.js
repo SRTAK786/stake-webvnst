@@ -510,8 +510,6 @@ async function updateUI() {
 
         await updateContractStats();
         
-        await updatePendingRewards();
-        
         await loadDailyVNTRewards();
         
 
