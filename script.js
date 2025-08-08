@@ -467,8 +467,6 @@ async function updateUI() {
             }
         }
 
-        await updatePendingRewardsUI();
-
         if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
             await updateHomeStats();
         }
