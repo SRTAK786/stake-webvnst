@@ -570,15 +570,26 @@ async function getStakeDetails(stakeIndex) {
 
 async function updatePendingRewardsUI() {
     try {
-        // सिंगल वैल्यू रिटर्न होने की स्थिति में
+        const rewardsElement = document.getElementById('dailyVntRewardsDisplay');
+        if (!rewardsElement) {
+            console.warn("Rewards display element not found");
+            return;
+        }
+
         const vntRewardsWei = await stakingContract.methods.getPendingRewards(accounts[0]).call();
         const vntRewards = web3.utils.fromWei(vntRewardsWei.toString(), 'ether');
         
-        document.getElementById('pendingVntRewards').textContent = 
-            parseFloat(vntRewards).toFixed(4) + ' VNT';
-            
+        rewardsElement.innerHTML = `
+            <div class="reward-item">
+                <span class="reward-label">Pending VNT:</span>
+                <span class="reward-value">${parseFloat(vntRewards).toFixed(4)} VNT</span>
+            </div>
+        `;
     } catch (error) {
         console.error("Error fetching pending rewards:", error);
-        document.getElementById('pendingVntRewards').textContent = 'Error';
+        const rewardsElement = document.getElementById('dailyVntRewardsDisplay');
+        if (rewardsElement) {
+            rewardsElement.innerHTML = '<p class="error">Error loading rewards</p>';
+        }
     }
 }
