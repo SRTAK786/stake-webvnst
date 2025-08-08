@@ -120,19 +120,6 @@ function initContracts() {
     }
 }
 
-async function updateHomeStats() {
-    try {
-        const stats = await stakingContract.methods.getContractStats().call();
-        document.getElementById('totalUsers').textContent = stats.usersCount;
-        document.getElementById('totalStakedInContract').textContent = 
-            web3.utils.fromWei(stats.totalStaked, 'ether') + ' VNST';
-        document.getElementById('totalVNTWithdrawn').textContent = 
-            web3.utils.fromWei(stats.vntWithdrawn, 'ether') + ' VNT';
-    } catch (error) {
-        console.error("Failed to update home stats:", error);
-    }
-}
-
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -283,8 +270,6 @@ function handleDisconnect() {
         window.walletConnectProvider.disconnect();
         window.walletConnectProvider = null;
     }
-
-    showNotification("Wallet disconnected", 'warning');
 }
 
 function updateWalletButton() {
@@ -470,23 +455,6 @@ async function updateUI() {
         
         if (!isConnected || !accounts[0]) return;
     
-        try {
-            const rewards = await stakingContract.methods.getPendingRewards(accounts[0]).call();
-            let vntRewards = '0';
-            
-            // Mainnet और Testnet के लिए अलग-अलग हैंडलिंग
-            if (Array.isArray(rewards)) {
-                vntRewards = web3.utils.fromWei(rewards[0].toString(), 'ether');
-            } else {
-                vntRewards = web3.utils.fromWei(rewards.toString(), 'ether');
-            }
-            
-            document.getElementById('pendingVntRewards').textContent = 
-                parseFloat(vntRewards).toFixed(4) + ' VNT';
-        } catch (error) {
-            console.error("Rewards fetch error:", error);
-            document.getElementById('pendingVntRewards').textContent = 'Error';
-        }
             } catch (error) {
                 console.error("Error fetching rewards:", error);
                 if (document.getElementById('pendingVntRewards')) {
@@ -498,6 +466,8 @@ async function updateUI() {
                 }
             }
         }
+
+        await updatePendingRewardsUI();
 
         if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
             await updateHomeStats();
