@@ -471,11 +471,6 @@ async function updateUI() {
             
         }
 
-        await updateContractStats();
-        
-        await loadDailyVNTRewards();
-        
-
         if (document.getElementById('claimVNTBtn')) {
             try {
                 const withdrawInfo = await stakingContract.methods.getMinWithdrawInfo().call();
