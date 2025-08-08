@@ -20,6 +20,7 @@ let stakingContract;
 let accounts = [];
 let isConnected = false;
 let walletConnectProvider = null;
+let isApproved = false;
 
 // Initialize the application
 window.addEventListener('DOMContentLoaded', async () => {
@@ -214,6 +215,7 @@ async function connectMetaMask() {
         isConnected = true;
         updateWalletButton();
         initContracts();
+        await checkApprovalStatus();
         await updateUI();
         await updateHomeStats();
         toggleWalletModal();
@@ -306,17 +308,36 @@ function updateWalletButton() {
 
 // Staking functions
 async function approveMax() {
-    if (!isConnected) return alert("Please connect your wallet first");
+    if (!isConnected) {
+        showNotification("Please connect wallet first", "error");
+        return;
+    }
     
     try {
         const maxAmount = web3.utils.toWei('10000', 'ether');
-        const result = await vnstTokenContract.methods.approve(stakingAddress, maxAmount)
+        showNotification("Approving VNST tokens...", "info");
+        
+        const result = await vnstTokenContract.methods
+            .approve(stakingAddress, maxAmount)
             .send({ from: accounts[0] });
+            
         console.log("Approval successful:", result);
-        alert("Approval successful! You can now stake VNST tokens.");
+        showNotification("Approval successful!", "success");
+        
+        // Approve बटन को disable करें
+        const approveBtn = document.getElementById('approveMaxBtn');
+        if (approveBtn) {
+            approveBtn.disabled = true;
+            approveBtn.textContent = "Already Approved";
+            approveBtn.style.opacity = "0.7";
+        }
+        
+        // LocalStorage में approval स्टोर करें (वैकल्पिक)
+        localStorage.setItem(`vnstApproved_${accounts[0]}`, "true");
+        
     } catch (error) {
         console.error("Approval failed:", error);
-        alert("Approval failed: " + error.message);
+        showNotification(`Approval failed: ${error.message}`, "error");
     }
 }
 
@@ -459,6 +480,39 @@ async function updateUI() {
             document.getElementById('walletBalance').textContent = 
                 web3.utils.fromWei(balance, 'ether') + ' VNST';
         }
+
+        if (window.location.pathname.includes('stake.html')) {
+            // अप्रूवल स्टेटस चेक करें
+            const approvalStatus = await checkApprovalStatus();
+            
+            // Approve बटन अपडेट करें
+            const approveBtn = document.getElementById('approveMaxBtn');
+            if (approveBtn) {
+                if (approvalStatus) {
+                    approveBtn.classList.add('btn-disabled');
+                    approveBtn.classList.remove('btn-not-approved');
+                    approveBtn.textContent = "Already Approved";
+                } else {
+                    approveBtn.classList.remove('btn-disabled');
+                    approveBtn.classList.add('btn-not-approved');
+                    approveBtn.textContent = "Approve VNST";
+                }
+            }
+            
+            // Stake बटन अपडेट करें
+            const stakeBtn = document.getElementById('stakeBtn');
+            if (stakeBtn) {
+                if (approvalStatus) {
+                    stakeBtn.classList.add('btn-approved');
+                    stakeBtn.classList.remove('btn-not-approved', 'btn-disabled');
+                    stakeBtn.disabled = false;
+                } else {
+                    stakeBtn.classList.add('btn-not-approved');
+                    stakeBtn.classList.remove('btn-approved');
+                    stakeBtn.disabled = true;
+                }
+            }
+        }
         
         // 2. स्टेक्ड अमाउंट अपडेट करें
         if (document.getElementById('yourStaked')) {
@@ -504,14 +558,14 @@ async function updateUI() {
                 const stakesCount = await stakingContract.methods.getUserStakesCount(accounts[0]).call();
                 const stakesList = document.getElementById('stakesList');
                 stakesList.innerHTML = '';
-        
+    
                 if (stakesCount > 0) {
                     const summaryCard = document.createElement('div');
                     summaryCard.className = 'stake-summary';
-            
+        
                     let totalStaked = 0;
                     const activeStakes = [];
-            
+        
                     for (let i = 0; i < stakesCount; i++) {
                         const stake = await stakingContract.methods.userStakes(accounts[0], i).call();
                         if (stake.isActive) {
@@ -519,18 +573,19 @@ async function updateUI() {
                             activeStakes.push(stake);
                         }
                     }
-            
+        
                     summaryCard.innerHTML = `
                         <p><strong>Total Staked:</strong> ${totalStaked.toFixed(2)} VNST</p>
                         <p><strong>Active Stakes:</strong> ${activeStakes.length}</p>
-                        <div class="see-more">See More Details</div>
-            `        ;
-            
+                        <div class="see-more">Show All Stakes</div>
+                `    ;
+        
                     const detailsCard = document.createElement('div');
                     detailsCard.className = 'stake-details';
-            
-                   for (const [index, stake] of activeStakes.entries()) {
-                        const stakeDays = await stakingContract.methods.getStakeDays(accounts[0], index).call();
+        
+                    // सभी एक्टिव स्टेक्स दिखाएं (बिना लिमिट के)
+                    activeStakes.forEach((stake, index) => {
+                        const stakeDays = Math.min(365, Math.floor((Date.now()/1000 - stake.startDay*86400)/86400));
                         const startDate = new Date(stake.startDay * 86400 * 1000).toLocaleDateString();
                         const daysRemaining = Math.max(0, 365 - stakeDays);
 
@@ -544,17 +599,17 @@ async function updateUI() {
                                     <div style="width: ${(stakeDays / 365) * 100}%"></div>
                                 </div>
                             </div>
-                `       ;
-                    };
-            
+                    `    ;
+                    });
+        
                     stakesList.appendChild(summaryCard);
                     stakesList.appendChild(detailsCard);
-            
+        
                     const seeMoreBtn = summaryCard.querySelector('.see-more');
                     seeMoreBtn.addEventListener('click', () => {
                         detailsCard.classList.toggle('active');
                         seeMoreBtn.textContent = detailsCard.classList.contains('active') ? 
-                            'Show Less' : 'See More Details';
+                            'Hide Stakes' : 'Show All Stakes';
                     });
                 } else {
                     stakesList.innerHTML = '<p>No active stakes found</p>';
@@ -618,6 +673,33 @@ function setupStakingPage() {
     
     if (ref && referralAddressInput && !referralAddressInput.value) {
         referralAddressInput.value = ref;
+    }
+    await checkApprovalStatus();
+}
+
+async function checkApprovalStatus() {
+    if (!isConnected || !accounts[0]) return;
+    
+    try {
+        // कॉन्ट्रैक्ट से अप्रूवल चेक करें
+        const allowance = await vnstTokenContract.methods
+            .allowance(accounts[0], stakingAddress)
+            .call();
+            
+        const minApproval = web3.utils.toWei('100', 'ether'); // 100 VNST minimum
+        
+        // LocalStorage से भी चेक करें (फास्ट चेक के लिए)
+        const isApproved = localStorage.getItem(`vnstApproved_${accounts[0]}`) === "true" || 
+                          parseInt(allowance) >= parseInt(minApproval);
+        
+        const approveBtn = document.getElementById('approveMaxBtn');
+        if (approveBtn && isApproved) {
+            approveBtn.disabled = true;
+            approveBtn.textContent = "Already Approved";
+            approveBtn.style.opacity = "0.7";
+        }
+    } catch (error) {
+        console.error("Error checking approval status:", error);
     }
 }
 
