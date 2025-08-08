@@ -132,6 +132,27 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
+async function updateHomeStats() {
+    try {
+        const stats = await stakingContract.methods.getContractStats().call();
+        
+        // Update UI elements if they exist
+        if (document.getElementById('totalUsers')) {
+            document.getElementById('totalUsers').textContent = stats.usersCount;
+        }
+        if (document.getElementById('totalStakedInContract')) {
+            document.getElementById('totalStakedInContract').textContent = 
+                web3.utils.fromWei(stats.totalStaked, 'ether') + ' VNST';
+        }
+        if (document.getElementById('totalVNTWithdrawn')) {
+            document.getElementById('totalVNTWithdrawn').textContent = 
+                web3.utils.fromWei(stats.vntWithdrawn, 'ether') + ' VNT';
+        }
+    } catch (error) {
+        console.error("Failed to update home stats:", error);
+    }
+}
+
 async function updateContractStats() {
   if (!isConnected) return;
   
@@ -194,7 +215,7 @@ async function connectMetaMask() {
         updateWalletButton();
         initContracts();
         await updateUI();
-
+        await updateHomeStats();
         toggleWalletModal();
     } catch (error) {
         console.error("Connection failed:", error);
@@ -450,6 +471,10 @@ async function updateUI() {
                 document.getElementById('totalClaimedRewards').textContent = 
                     web3.utils.fromWei(user.totalClaimed || '0', 'ether') + ' VNT';
             }
+        }
+
+        if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
+            await updateHomeStats();
         }
         
         // 3. पेंडिंग रिवॉर्ड्स अपडेट करें (नया फंक्शन कॉल)
