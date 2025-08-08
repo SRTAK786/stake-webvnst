@@ -468,7 +468,7 @@ async function updateUI() {
         }
 
         if (window.location.pathname.includes('index.html') || window.location.pathname === '/') {
-            await updateHomeStats();
+            
         }
 
         await updateContractStats();
