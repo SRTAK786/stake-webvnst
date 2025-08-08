@@ -155,15 +155,28 @@ body::before {
 
 .stake-details {
   max-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
   transition: max-height 0.5s ease;
   background: rgba(0, 43, 92, 0.5);
   border-radius: 0 0 10px 10px;
 }
 
 .stake-details.active {
-  max-height: 500px; /* यह जितनी बड़ी स्टेक लिस्ट हो सकती है */
+  max-height: 70vh; /* यह जितनी बड़ी स्टेक लिस्ट हो सकती है */
   padding: 1rem;
+}
+
+.stake-details::-webkit-scrollbar {
+  width: 8px;
+}
+
+.stake-details::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+.stake-details::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 4px;
 }
 
 .see-more {
@@ -626,4 +639,22 @@ body.no-scroll {
     .stake-item {
         padding: 12px;
     }
+}
+
+/* Button States */
+.btn-approved {
+  background: linear-gradient(45deg, var(--success-color), #27ae60) !important;
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3) !important;
+}
+
+.btn-not-approved {
+  background: linear-gradient(45deg, var(--warning-color), #e67e22) !important;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3) !important;
+}
+
+.btn-disabled {
+  background: linear-gradient(45deg, #7f8c8d, #95a5a6) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  box-shadow: none !important;
 }
