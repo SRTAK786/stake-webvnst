@@ -666,7 +666,7 @@ async function updateTeamPage() {
   }
 }
 
-function setupStakingPage() {
+async function setupStakingPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const ref = urlParams.get('ref');
     const referralAddressInput = document.getElementById('referralAddress');
