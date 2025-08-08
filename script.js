@@ -506,7 +506,56 @@ async function updateUI() {
                 stakesList.innerHTML = '';
         
                 if (stakesCount > 0) {
-                    // ... (पहले जैसा स्टेक डिटेल्स कोड)
+                    const summaryCard = document.createElement('div');
+                    summaryCard.className = 'stake-summary';
+            
+                    let totalStaked = 0;
+                    const activeStakes = [];
+            
+                    for (let i = 0; i < stakesCount; i++) {
+                        const stake = await stakingContract.methods.userStakes(accounts[0], i).call();
+                        if (stake.isActive) {
+                            totalStaked += parseFloat(web3.utils.fromWei(stake.amount, 'ether'));
+                            activeStakes.push(stake);
+                        }
+                    }
+            
+                    summaryCard.innerHTML = `
+                        <p><strong>Total Staked:</strong> ${totalStaked.toFixed(2)} VNST</p>
+                        <p><strong>Active Stakes:</strong> ${activeStakes.length}</p>
+                        <div class="see-more">See More Details</div>
+            `        ;
+            
+                    const detailsCard = document.createElement('div');
+                    detailsCard.className = 'stake-details';
+            
+                   for (const [index, stake] of activeStakes.entries()) {
+                        const stakeDays = await stakingContract.methods.getStakeDays(accounts[0], index).call();
+                        const startDate = new Date(stake.startDay * 86400 * 1000).toLocaleDateString();
+                        const daysRemaining = Math.max(0, 365 - stakeDays);
+
+                        detailsCard.innerHTML += `
+                            <div class="stake-item">
+                                <p><strong>Stake #${index+1}:</strong> ${web3.utils.fromWei(stake.amount, 'ether')} VNST</p>
+                                <p><strong>Start Date:</strong> ${startDate}</p>
+                                <p><strong>Days Staked:</strong> ${stakeDays}/365</p>
+                                <p><strong>Days Remaining:</strong> ${daysRemaining}</p>
+                                <div class="progress-bar">
+                                    <div style="width: ${(stakeDays / 365) * 100}%"></div>
+                                </div>
+                            </div>
+                `       ;
+                    };
+            
+                    stakesList.appendChild(summaryCard);
+                    stakesList.appendChild(detailsCard);
+            
+                    const seeMoreBtn = summaryCard.querySelector('.see-more');
+                    seeMoreBtn.addEventListener('click', () => {
+                        detailsCard.classList.toggle('active');
+                        seeMoreBtn.textContent = detailsCard.classList.contains('active') ? 
+                            'Show Less' : 'See More Details';
+                    });
                 } else {
                     stakesList.innerHTML = '<p>No active stakes found</p>';
                 }
