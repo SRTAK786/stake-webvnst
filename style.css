@@ -61,6 +61,31 @@ body::before {
   z-index: 1000;
 }
 
+#navMenu {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  margin-left: auto;
+  align-items: center; /* नए एलिमेंट्स को सेंटर करने के लिए */
+}
+
+#navMenu li.nav-btn-container {
+  margin-left: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: row; /* मोबाइल पर भी हॉरिजॉन्टल रखने के लिए */
+  }
+  
+  .mobile-menu-btn {
+    display: block;
+    margin-left: auto;
+  }
+}
+
 .logo {
   height: 50px;
   transition: all 0.3s ease;
