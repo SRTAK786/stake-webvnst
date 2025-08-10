@@ -159,24 +159,32 @@ body::before {
   transition: max-height 0.5s ease;
   background: rgba(0, 43, 92, 0.5);
   border-radius: 0 0 10px 10px;
+  padding: 0 1rem;
 }
 
 .stake-details.active {
-  max-height: 70vh; /* यह जितनी बड़ी स्टेक लिस्ट हो सकती है */
+  max-height: 500px; /* यह जितनी बड़ी स्टेक लिस्ट हो सकती है */
   padding: 1rem;
+  margin-top: 10px;
+  border: 1px solid var(--glass-border);
 }
 
 .stake-details::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .stake-details::-webkit-scrollbar-track {
   background: rgba(0,0,0,0.1);
+  border-radius: 3px;
 }
 
 .stake-details::-webkit-scrollbar-thumb {
   background: var(--accent-color);
-  border-radius: 4px;
+  border-radius: 3px;
+}
+
+.stake-details::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
 }
 
 .see-more {
@@ -641,20 +649,77 @@ body.no-scroll {
     }
 }
 
-/* Button States */
-.btn-approved {
-  background: linear-gradient(45deg, var(--success-color), #27ae60) !important;
-  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3) !important;
+@font-face {
+  font-display: swap; /* फॉन्ट लोड होने तक टेक्स्ट दिखता रहेगा */
 }
 
-.btn-not-approved {
-  background: linear-gradient(45deg, var(--warning-color), #e67e22) !important;
-  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3) !important;
+/* Add to your style.css */
+#dailyVntRewardsDisplay {
+  min-height: 120px; /* Ensures space for content */
+  padding: 15px;
+  background: rgba(0, 67, 135, 0.6);
+  border-radius: 10px;
+  margin: 15px 0;
+  position: relative; /* For absolute positioning of loader */
 }
 
-.btn-disabled {
-  background: linear-gradient(45deg, #7f8c8d, #95a5a6) !important;
-  cursor: not-allowed !important;
-  opacity: 0.7 !important;
-  box-shadow: none !important;
+#dailyVntRewardsDisplay .loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.reward-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.reward-item:last-child {
+  border-bottom: none;
+}
+
+.reward-label {
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
+.reward-value {
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+
+/* Add these styles to your CSS file */
+.rewards-container {
+  overflow: visible !important; /* Force overflow visible */
+  min-height: 150px; /* Ensure enough space */
+}
+
+#dailyVntRewardsDisplay {
+  position: relative;
+  z-index: 10; /* Higher than surrounding elements */
+  overflow: visible !important;
+  padding: 15px;
+  background: rgba(0, 67, 135, 0.6);
+  border-radius: 10px;
+}
+
+/* Loading spinner positioning */
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Reward items styling */
+.reward-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
